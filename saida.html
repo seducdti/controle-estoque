@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saídas</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <h1>Registrar Saída</h1>
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="produtos.html">Produtos</a>
+    <a href="entrada.html">Entradas</a>
+    <a href="saida.html" class="active">Saídas</a>
+    <a href="controle.html">Controle</a>
+    <button onclick="logout()" class="btn-sair">Sair</button>
+  </nav>
+</header>
+
+<main>
+  <form id="formSaida">
+    <select id="produtoSaida" required></select>
+    <input type="number" id="quantidadeSaida" placeholder="Quantidade" min="1" required>
+    <input type="date" id="dataSaida" required>
+    <input type="text" id="destinoSaida" placeholder="Destino" required>
+    <button type="submit">Registrar</button>
+  </form>
+
+  <h2>Histórico de Saídas</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Produto</th>
+        <th>Quantidade</th>
+        <th>Data</th>
+        <th>Destino</th>
+      </tr>
+    </thead>
+
+    <tbody id="listaSaidas"></tbody>
+  </table>
+</main>
+
+<script src="js/saida.js"></script>
+<script type="module" src="js/logout.js"></script>
+<script type="module" src="js/auth-protect.js"></script>
+
+</body>
+</html>
