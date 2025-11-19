@@ -1,26 +1,38 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Controle</title>
-
-<script type="module">
-import { protegerPagina, logout } from "./auth.js";
-protegerPagina();
-
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("btnSair").onclick = () => logout();
-});
-</script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle Geral</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="auth.js"></script>
+  <script type="module" src="logout.js"></script>
 </head>
 <body>
 
-<h2>Controle de Estoque</h2>
+<header>
+  <h1>Controle de Estoque</h1>
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="produtos.html">Produtos</a>
+    <a href="entrada.html">Entradas</a>
+    <a href="saida.html">Saídas</a>
+    <a href="controle.html" class="active">Controle</a>
+    <button onclick="logout()" class="btn-sair">Sair</button>
+  </nav>
+</header>
 
-<button id="btnSair">Sair</button>
+<main>
+  <h2>Controle Geral</h2>
 
-<script src="controle.js" type="module"></script>
+  <div id="relatorio"></div>
+
+  <script type="module" src="controle.js"></script>
+</main>
+
+<footer>
+  <center><small>© 2025 Controle de Estoque</small></center>
+</footer>
 
 </body>
 </html>
