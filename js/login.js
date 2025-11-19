@@ -1,29 +1,21 @@
 import { auth } from "./firebase.js";
-import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-// Redireciona se já estiver logado
-onAuthStateChanged(auth, (user) => {
-  if (user) window.location.href = "index.html";
-});
-
-// Login
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const email = document.getElementById("email").value;
+  let usuario = document.getElementById("usuario").value.trim();
   const senha = document.getElementById("senha").value;
 
-  const btn = e.submitter;
-  btn.disabled = true;
-  btn.textContent = "Entrando...";
-
-  try {
-    await signInWithEmailAndPassword(auth, email, senha);
-    window.location.href = "index.html";
-  } catch (erro) {
-    alert("Erro ao entrar: " + erro.message);
+  // Converte "Admin" -> email real do Firebase
+  if (usuario.toLowerCase() === "admin") {
+    usuario = "admin@system.com";
   }
 
-  btn.disabled = false;
-  btn.textContent = "Entrar";
+  try {
+    await signInWithEmailAndPassword(auth, usuario, senha);
+    window.location.href = "index.html";
+  } catch (error) {
+    alert("Usuário ou senha incorretos.");
+  }
 });
