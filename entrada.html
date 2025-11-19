@@ -1,1 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entradas</title>
+  <link rel="stylesheet" href="css/style.css">
+
+<script>
+  if (!localStorage.getItem("usuarioLogado")) {
+      window.location.href = "login.html";
+  }
+</script>
+
+</head>
+<body>
+
+<header>
+  <h1>Entradas de Produtos</h1>
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="produtos.html">Produtos</a>
+    <a href="entrada.html" class="active">Entradas</a>
+    <a href="saida.html">Saídas</a>
+    <a href="controle.html">Controle</a>
+    <button onclick="logout()" class="btn-sair">Sair</button>
+  </nav>
+</header>
+
+<main>
+  <form id="formEntrada">
+    <select id="produtoEntrada" required></select>
+    <input type="number" id="quantidadeEntrada" placeholder="Quantidade" min="1" required>
+    <input type="date" id="dataEntrada" required>
+    <input type="text" id="tipoMaterial" placeholder="Tipo de material" required>
+    <button type="submit">Registrar Entrada</button>
+  </form>
+
+  <h2>Histórico de Entradas</h2>
+  <table>
+    <thead>
+      <tr><th>Produto</th><th>Quantidade</th><th>Data</th><th>Material</th></tr>
+    </thead>
+    <tbody id="listaEntradas"></tbody>
+  </table>
+</main>
+
+<script src="js/entrada.js"></script>
+
+<script>
+function logout(){
+    localStorage.removeItem("usuarioLogado");
+    localStorage.removeItem("nivel");
+    window.location.href = "login.html";
+}
+</script>
+
+</body>
+</html>
 
