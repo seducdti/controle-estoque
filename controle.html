@@ -5,11 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle Geral</title>
   <link rel="stylesheet" href="css/style.css">
+
+<script>
+  if (!localStorage.getItem("usuarioLogado")) {
+      window.location.href = "login.html";
+  }
+</script>
+
 </head>
 <body>
 
 <header>
-  <h1>Controle Geral</h1>
+  <h1>Controle de Estoque</h1>
   <nav>
     <a href="index.html">Dashboard</a>
     <a href="produtos.html">Produtos</a>
@@ -21,27 +28,32 @@
 </header>
 
 <main>
-  <h2>Relatório Geral</h2>
+  <h2>Resumo por Produto</h2>
 
   <table>
     <thead>
       <tr>
         <th>ID</th>
-        <th>Material</th>
-        <th>Total Entradas</th>
-        <th>Total Saídas</th>
+        <th>Produto</th>
+        <th>Entrou</th>
+        <th>Saiu</th>
         <th>Estoque Atual</th>
         <th>Nível</th>
       </tr>
     </thead>
-
-    <tbody id="controleTabela"></tbody>
+    <tbody id="tabelaControle"></tbody>
   </table>
 </main>
 
 <script src="js/controle.js"></script>
-<script type="module" src="js/logout.js"></script>
-<script type="module" src="js/auth-protect.js"></script>
+
+<script>
+function logout(){
+    localStorage.removeItem("usuarioLogado");
+    localStorage.removeItem("nivel");
+    window.location.href = "login.html";
+}
+</script>
 
 </body>
 </html>
