@@ -1,37 +1,36 @@
-function getDados() {
-  return JSON.parse(localStorage.getItem("estoque")) || { produtos: [], entradas: [], saidas: [] };
-}
+// entrada.js
+import { db } from "./firebase.js";
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  getDocs,
+  doc
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-function salvarDados(d) {
-  localStorage.setItem("estoque", JSON.stringify(d));
-}
-
-function popularSelect() {
-  const dados = getDados();
-  const select = document.getElementById("produtoEntrada");
-  select.innerHTML = "";
-  dados.produtos.forEach(p => {
-    select.innerHTML += `<option value="${p.id}">${p.nome}</option>`;
-  });
-}
-
-document.getElementById("formEntrada").addEventListener("submit", (e) => {
+document.getElementById("formEntrada").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const dados = getDados();
-
-  const id = Number(document.getElementById("produtoEntrada").value);
+  const nome = document.getElementById("produtoEntrada").value;
   const qtd = Number(document.getElementById("quantidadeEntrada").value);
-  const data = document.getElementById("dataEntrada").value;
 
-  dados.entradas.push({ id, quantidade: qtd, data });
+  // registra entrada
+  await addDoc(collection(db, "entradas"), {
+    produto: nome,
+    quantidade: qtd,
+    data: new Date()
+  });
 
-  const produto = dados.produtos.find(p => p.id === id);
-  produto.quantidade += qtd;
+  // aumenta no estoque
+  const snap = await getDocs(collection(db, "produtos"));
+  snap.forEach(async (p) => {
+    if (p.data().nome === nome) {
+      await updateDoc(doc(db, "produtos", p.id), {
+        quantidade: p.data().quantidade + qtd
+      });
+    }
+  });
 
-  salvarDados(dados);
-  e.target.reset();
   alert("Entrada registrada!");
+  e.target.reset();
 });
-
-popularSelect();
