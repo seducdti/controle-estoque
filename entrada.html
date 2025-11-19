@@ -3,20 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Entradas</title>
   <link rel="stylesheet" href="css/style.css">
-
-<script>
-  if (!localStorage.getItem("usuarioLogado")) {
-      window.location.href = "login.html";
-  }
-</script>
-
+  <title>Entrada de Estoque</title>
+  <script type="module" src="auth.js"></script>
+  <script type="module" src="logout.js"></script>
 </head>
 <body>
 
 <header>
-  <h1>Entradas de Produtos</h1>
+  <h1>Controle de Estoque</h1>
   <nav>
     <a href="index.html">Dashboard</a>
     <a href="produtos.html">Produtos</a>
@@ -28,33 +23,20 @@
 </header>
 
 <main>
+  <h2>Registrar Entrada</h2>
+
   <form id="formEntrada">
-    <select id="produtoEntrada" required></select>
-    <input type="number" id="quantidadeEntrada" placeholder="Quantidade" min="1" required>
-    <input type="date" id="dataEntrada" required>
-    <input type="text" id="tipoMaterial" placeholder="Tipo de material" required>
-    <button type="submit">Registrar Entrada</button>
+    <input type="text" id="produtoEntrada" placeholder="Produto" required>
+    <input type="number" id="quantidadeEntrada" placeholder="Quantidade" required>
+    <button type="submit">Registrar</button>
   </form>
 
-  <h2>Histórico de Entradas</h2>
-  <table>
-    <thead>
-      <tr><th>Produto</th><th>Quantidade</th><th>Data</th><th>Material</th></tr>
-    </thead>
-    <tbody id="listaEntradas"></tbody>
-  </table>
+  <script type="module" src="entrada.js"></script>
 </main>
 
-<script src="js/entrada.js"></script>
-
-<script>
-function logout(){
-    localStorage.removeItem("usuarioLogado");
-    localStorage.removeItem("nivel");
-    window.location.href = "login.html";
-}
-</script>
+<footer>
+  <center><small>© 2025 Controle de Estoque</small></center>
+</footer>
 
 </body>
 </html>
-
