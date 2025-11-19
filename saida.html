@@ -1,59 +1,26 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Saídas</title>
-  <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<title>Saída</title>
 
-<script>
-  if (!localStorage.getItem("usuarioLogado")) {
-      window.location.href = "login.html";
-  }
+<script type="module">
+import { protegerPagina, logout } from "./auth.js";
+protegerPagina();
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("btnSair").onclick = () => logout();
+});
 </script>
 
 </head>
 <body>
 
-<header>
-  <h1>Saídas de Produtos</h1>
-  <nav>
-    <a href="index.html">Dashboard</a>
-    <a href="produtos.html">Produtos</a>
-    <a href="entrada.html">Entradas</a>
-    <a href="saida.html" class="active">Saídas</a>
-    <a href="controle.html">Controle</a>
-    <button onclick="logout()" class="btn-sair">Sair</button>
-  </nav>
-</header>
+<h2>Registrar Saída</h2>
 
-<main>
-  <form id="formSaida">
-    <select id="produtoSaida" required></select>
-    <input type="number" id="quantidadeSaida" placeholder="Quantidade" min="1" required>
-    <input type="text" id="destinoSaida" placeholder="Destino" required>
-    <input type="date" id="dataSaida" required>
-    <button type="submit">Registrar Saída</button>
-  </form>
+<button id="btnSair">Sair</button>
 
-  <h2>Histórico de Saídas</h2>
-  <table>
-    <thead>
-      <tr><th>Produto</th><th>Quantidade</th><th>Destino</th><th>Data</th></tr>
-    </thead>
-    <tbody id="listaSaidas"></tbody>
-  </table>
-</main>
-
-<script src="js/saida.js"></script>
-
-<script>
-function logout(){
-    localStorage.removeItem("usuarioLogado");
-    localStorage.removeItem("nivel");
-    window.location.href = "login.html";
-}
-</script>
+<script src="saida.js" type="module"></script>
 
 </body>
 </html>
