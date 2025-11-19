@@ -1,1 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produtos</title>
+  <link rel="stylesheet" href="css/style.css">
+
+<script>
+  if (!localStorage.getItem("usuarioLogado")) {
+      window.location.href = "login.html";
+  }
+</script>
+
+</head>
+<body>
+
+<header>
+  <h1>Produtos</h1>
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="produtos.html" class="active">Produtos</a>
+    <a href="entrada.html">Entradas</a>
+    <a href="saida.html">Saídas</a>
+    <a href="controle.html">Controle</a>
+    <button onclick="logout()" class="btn-sair">Sair</button>
+  </nav>
+</header>
+
+<main>
+  <h2>Cadastrar Produto</h2>
+
+  <form id="formProduto">
+    <input type="text" id="nome" placeholder="Nome do Produto" required>
+    <button type="submit">Cadastrar</button>
+  </form>
+
+  <h2>Produtos Cadastrados</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nome</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="listaProdutos"></tbody>
+  </table>
+
+</main>
+
+<script src="js/produtos.js"></script>
+
+<script>
+function logout(){
+    localStorage.removeItem("usuarioLogado");
+    localStorage.removeItem("nivel");
+    window.location.href = "login.html";
+}
+</script>
+
+</body>
+</html>
 
