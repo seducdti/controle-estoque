@@ -1,11 +1,6 @@
+// login.js
 import { auth } from "./firebase.js";
 import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-
-// Usuário padrão ADMIN (não aparece no HTML)
-const ADMIN_USER = {
-  email: "adm@sistema.com",
-  password: "T3cn0l0g1@dm1n"
-};
 
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -13,18 +8,13 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   const usuario = document.getElementById("usuario").value.trim();
   const senha = document.getElementById("senha").value.trim();
 
-  let emailLogin = "";
-
-  // Substitui "Admin" pelo e-mail real escondido
-  if (usuario.toLowerCase() === "admin") {
-    emailLogin = ADMIN_USER.email;
-  } else {
-    alert("Usuário inválido!");
-    return;
-  }
+  // Usuário padrão convertido para e-mail interno
+  const emailConvertido = usuario.toLowerCase() === "admin"
+    ? "adm@sistema.com"
+    : usuario + "@sistema.com";
 
   try {
-    await signInWithEmailAndPassword(auth, emailLogin, senha);
+    await signInWithEmailAndPassword(auth, emailConvertido, senha);
     window.location.href = "index.html";
   } catch (error) {
     alert("Usuário ou senha incorretos!");
