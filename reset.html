@@ -3,37 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Redefinir Senha</title>
+  <title>Recuperar Senha</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <main class="login-container">
-  <h2>Redefinir Senha</h2>
+  <h2>Recuperar Senha</h2>
 
-  <form id="resetForm">
-    <input type="email" id="email" placeholder="Seu e-mail" required>
-    <button type="submit">Enviar Link</button>
-  </form>
+  <p>Entre em contato com o administrador do sistema.</p>
 
-  <a href="login.html">Voltar ao Login</a>
+  <a href="login.html">Voltar</a>
 </main>
-
-<script type="module">
-import { auth } from "./js/firebase.js";
-import { sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-
-document.getElementById("resetForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = document.getElementById("email").value;
-  try {
-    await sendPasswordResetEmail(auth, email);
-    alert("Link enviado!");
-  } catch (e) {
-    alert("Erro: " + e.message);
-  }
-});
-</script>
 
 </body>
 </html>
