@@ -1,42 +1,37 @@
-function getDados() {
-  return JSON.parse(localStorage.getItem("estoque")) || {
-    produtos: [],
-    entradas: [],
-    saidas: []
-  };
-}
+// controle.js
+import { db } from "./firebase.js";
+import {
+  collection,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-function calcularNivel(qtd) {
-  if (qtd >= 50) return { texto: "ALTO", cor: "green" };
-  if (qtd >= 20) return { texto: "MÉDIO", cor: "orange" };
-  return { texto: "BAIXO", cor: "red" };
-}
+const box = document.getElementById("relatorio");
 
-function atualizarControle() {
-  const dados = getDados();
-  const tbody = document.getElementById("controleTabela");
-  tbody.innerHTML = "";
+async function gerarRelatorio() {
+  let html = "<h3>Relatório Geral</h3>";
 
-  dados.produtos.forEach(p => {
-    const entradas = dados.entradas.filter(e => e.id === p.id)
-      .reduce((sum, e) => sum + e.quantidade, 0);
-
-    const saidas = dados.saidas.filter(s => s.id === p.id)
-      .reduce((sum, s) => sum + s.quantidade, 0);
-
-    const nivel = calcularNivel(p.quantidade);
-
-    tbody.innerHTML += `
-      <tr>
-        <td>${p.id}</td>
-        <td>${p.nome}</td>
-        <td>${entradas}</td>
-        <td>${saidas}</td>
-        <td>${p.quantidade}</td>
-        <td style="color:${nivel.cor}; font-weight:bold;">${nivel.texto}</td>
-      </tr>
-    `;
+  html += "<h4>Produtos</h4>";
+  const produtos = await getDocs(collection(db, "produtos"));
+  produtos.forEach(p => {
+    const d = p.data();
+    html += `${d.nome}: ${d.quantidade} unidades<br>`;
   });
+
+  html += "<br><h4>Entradas</h4>";
+  const entradas = await getDocs(collection(db, "entradas"));
+  entradas.forEach(e => {
+    const d = e.data();
+    html += `${d.produto} +${d.quantidade}<br>`;
+  });
+
+  html += "<br><h4>Saídas</h4>";
+  const saidas = await getDocs(collection(db, "saidas"));
+  saidas.forEach(s => {
+    const d = s.data();
+    html += `${d.produto} -${d.quantidade}<br>`;
+  });
+
+  box.innerHTML = html;
 }
 
-atualizarControle();
+gerarRelatorio();
