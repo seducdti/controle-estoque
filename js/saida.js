@@ -1,37 +1,36 @@
-function getDados() {
-  return JSON.parse(localStorage.getItem("estoque")) || { produtos: [], entradas: [], saidas: [] };
-}
+// saida.js
+import { db } from "./firebase.js";
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  getDocs,
+  doc
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-function salvarDados(d) {
-  localStorage.setItem("estoque", JSON.stringify(d));
-}
-
-function popularSelect() {
-  const dados = getDados();
-  const select = document.getElementById("produtoEntrada");
-  select.innerHTML = "";
-  dados.produtos.forEach(p => {
-    select.innerHTML += `<option value="${p.id}">${p.nome}</option>`;
-  });
-}
-
-document.getElementById("formEntrada").addEventListener("submit", (e) => {
+document.getElementById("formSaida").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const dados = getDados();
+  const nome = document.getElementById("produtoSaida").value;
+  const qtd = Number(document.getElementById("quantidadeSaida").value);
 
-  const id = Number(document.getElementById("produtoEntrada").value);
-  const qtd = Number(document.getElementById("quantidadeEntrada").value);
-  const data = document.getElementById("dataEntrada").value;
+  // registra saída
+  await addDoc(collection(db, "saidas"), {
+    produto: nome,
+    quantidade: qtd,
+    data: new Date()
+  });
 
-  dados.entradas.push({ id, quantidade: qtd, data });
+  // reduz no estoque
+  const snap = await getDocs(collection(db, "produtos"));
+  snap.forEach(async (p) => {
+    if (p.data().nome === nome) {
+      await updateDoc(doc(db, "produtos", p.id), {
+        quantidade: p.data().quantidade - qtd
+      });
+    }
+  });
 
-  const produto = dados.produtos.find(p => p.id === id);
-  produto.quantidade += qtd;
-
-  salvarDados(dados);
+  alert("Saída registrada!");
   e.target.reset();
-  alert("Entrada registrada!");
 });
-
-popularSelect();
