@@ -1,59 +1,26 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Controle Geral</title>
-  <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<title>Controle</title>
 
-<script>
-  if (!localStorage.getItem("usuarioLogado")) {
-      window.location.href = "login.html";
-  }
+<script type="module">
+import { protegerPagina, logout } from "./auth.js";
+protegerPagina();
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("btnSair").onclick = () => logout();
+});
 </script>
 
 </head>
 <body>
 
-<header>
-  <h1>Controle de Estoque</h1>
-  <nav>
-    <a href="index.html">Dashboard</a>
-    <a href="produtos.html">Produtos</a>
-    <a href="entrada.html">Entradas</a>
-    <a href="saida.html">Saídas</a>
-    <a href="controle.html" class="active">Controle</a>
-    <button onclick="logout()" class="btn-sair">Sair</button>
-  </nav>
-</header>
+<h2>Controle de Estoque</h2>
 
-<main>
-  <h2>Resumo por Produto</h2>
+<button id="btnSair">Sair</button>
 
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Produto</th>
-        <th>Entrou</th>
-        <th>Saiu</th>
-        <th>Estoque Atual</th>
-        <th>Nível</th>
-      </tr>
-    </thead>
-    <tbody id="tabelaControle"></tbody>
-  </table>
-</main>
-
-<script src="js/controle.js"></script>
-
-<script>
-function logout(){
-    localStorage.removeItem("usuarioLogado");
-    localStorage.removeItem("nivel");
-    window.location.href = "login.html";
-}
-</script>
+<script src="controle.js" type="module"></script>
 
 </body>
 </html>
