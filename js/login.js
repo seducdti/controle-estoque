@@ -8,10 +8,10 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   const usuario = document.getElementById("usuario").value.trim().toLowerCase();
   const senha = document.getElementById("senha").value.trim();
 
-  // Converte automaticamente o usuário para o e-mail do Firebase
+  // Converte automaticamente o usuário para e-mail
   let emailConvertido = usuario + "@sistema.com";
 
-  // Para admin usa o e-mail escondido:
+  // Usuário especial admin
   if (usuario === "admin") {
     emailConvertido = "adm@sistema.com";
   }
@@ -19,7 +19,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   try {
     await signInWithEmailAndPassword(auth, emailConvertido, senha);
 
-    // Salva nível
+    // Guarda nível local
     const nivel = (usuario === "admin") ? "admin" : "operador";
     localStorage.setItem("nivel", nivel);
 
