@@ -16,7 +16,6 @@
       <a href="saida.html">Saídas</a>
       <a href="controle.html">Controle</a>
       <button onclick="logout()" class="btn-sair">Sair</button>
-
     </nav>
   </header>
 
@@ -27,11 +26,16 @@
         <select id="produtoEntrada" required>
           <option value="">-- Selecione o Produto --</option>
         </select>
+
         <input type="number" id="quantidadeEntrada" placeholder="Quantidade" min="1" required>
         <input type="date" id="dataEntrada" required>
+
         <input list="listaOrigens" id="origemEntrada" placeholder="Origem do Material" required>
         <datalist id="listaOrigens"></datalist>
-        <input type="text" id="tipoMaterial" placeholder="Tipo de Material" required>
+
+        <!-- ALTERADO AQUI -->
+        <input type="text" id="localMaterial" placeholder="Local do Material" required>
+
         <button type="submit">Registrar Entrada</button>
         <button type="button" id="cancelarEdicao" style="display:none;">Cancelar</button>
       </form>
@@ -52,7 +56,10 @@
               <th>Qtd</th>
               <th>Data</th>
               <th>Origem</th>
-              <th>Tipo</th>
+
+              <!-- ALTERADO AQUI -->
+              <th>Local</th>
+
               <th>Ações</th>
             </tr>
           </thead>
