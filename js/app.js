@@ -2,6 +2,23 @@
 // ===============================
 // Dashboard e funções globais
 // ===============================
+// ==========================
+//  FUNÇÕES GERAIS DO SISTEMA
+// ==========================
+
+function getDados() {
+  return JSON.parse(localStorage.getItem('estoque')) || { 
+    produtos: [],
+    entradas: [],
+    saidas: [],
+    aquisicoes: [],
+    origens: []
+  };
+}
+
+function salvarDados(dados) {
+  localStorage.setItem('estoque', JSON.stringify(dados));
+}
 
 // 🧩 Proteção de páginas — redireciona se não estiver logado
 if (!localStorage.getItem("usuarioLogado")) {
@@ -107,3 +124,4 @@ function gerarGraficoPizza() {
 
 // Chama o gráfico quando a página carregar
 window.addEventListener('DOMContentLoaded', gerarGraficoPizza);
+
