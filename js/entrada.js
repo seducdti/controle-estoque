@@ -121,7 +121,7 @@ if (formEntrada) {
     e.preventDefault();
     const idx = document.getElementById('produtoEntrada').value;
     const qtd = Number(document.getElementById('quantidadeEntrada').value);
-    const data = document.getElementById('dataEntrada').value || hojeISO();
+    const data = document.getElementById('dataEntrada').value;
     const origem = document.getElementById('origemEntrada').value.trim();
 
     // ALTERADO
@@ -184,3 +184,4 @@ if (formEntrada) {
     atualizarListaEntradas(valor);
   });
 }
+
