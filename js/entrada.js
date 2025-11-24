@@ -45,7 +45,7 @@ function atualizarListaEntradas(filtro = '') {
   const entradas = dados.entradas.filter(e =>
     e.produtoNome.toLowerCase().includes(filtro) ||
     e.origem.toLowerCase().includes(filtro) ||
-    e.tipoMaterial.toLowerCase().includes(filtro) ||
+    e.localMaterial.toLowerCase().includes(filtro) ||
     e.data.includes(filtro)
   );
 
@@ -63,7 +63,7 @@ function atualizarListaEntradas(filtro = '') {
       <td>${e.quantidade}</td>
       <td>${e.data}</td>
       <td>${e.origem}</td>
-      <td>${e.tipoMaterial}</td>
+      <td>${e.localMaterial}</td>
       <td>
         <button class="btn-editar" onclick="editarEntrada(${dados.entradas.indexOf(e)})">✏️</button>
         <button class="btn-excluir" onclick="excluirEntrada(${dados.entradas.indexOf(e)})">🗑️</button>
@@ -93,7 +93,10 @@ function editarEntrada(index) {
   document.getElementById('quantidadeEntrada').value = entrada.quantidade;
   document.getElementById('dataEntrada').value = entrada.data;
   document.getElementById('origemEntrada').value = entrada.origem;
-  document.getElementById('tipoMaterial').value = entrada.tipoMaterial;
+
+  // ALTERADO
+  document.getElementById('localMaterial').value = entrada.localMaterial;
+
   document.getElementById('formEntrada').setAttribute('data-editando', index);
   document.querySelector('#formEntrada button[type="submit"]').textContent = 'Salvar Alterações';
   document.getElementById('cancelarEdicao').style.display = 'inline';
@@ -120,9 +123,11 @@ if (formEntrada) {
     const qtd = Number(document.getElementById('quantidadeEntrada').value);
     const data = document.getElementById('dataEntrada').value || hojeISO();
     const origem = document.getElementById('origemEntrada').value.trim();
-    const tipo = document.getElementById('tipoMaterial').value.trim();
 
-    if (idx === '' || qtd <= 0 || !origem || !tipo) {
+    // ALTERADO
+    const local = document.getElementById('localMaterial').value.trim();
+
+    if (idx === '' || qtd <= 0 || !origem || !local) {
       alert('Preencha todos os campos corretamente.');
       return;
     }
@@ -134,15 +139,34 @@ if (formEntrada) {
     const editando = formEntrada.getAttribute('data-editando');
 
     if (editando !== null) {
-      dados.entradas[editando] = { produtoID: produto.id, produtoNome: produto.nome, quantidade: qtd, data, origem, tipoMaterial: tipo };
+      dados.entradas[editando] = {
+        produtoID: produto.id,
+        produtoNome: produto.nome,
+        quantidade: qtd,
+        data,
+        origem,
+        localMaterial: local
+      };
+
       formEntrada.removeAttribute('data-editando');
       document.querySelector('#formEntrada button[type="submit"]').textContent = 'Registrar Entrada';
       document.getElementById('cancelarEdicao').style.display = 'none';
       alert('Entrada atualizada com sucesso!');
+
     } else {
       produto.quantidade = (produto.quantidade || 0) + qtd;
-      dados.entradas.push({ produtoID: produto.id, produtoNome: produto.nome, quantidade: qtd, data, origem, tipoMaterial: tipo });
+
+      dados.entradas.push({
+        produtoID: produto.id,
+        produtoNome: produto.nome,
+        quantidade: qtd,
+        data,
+        origem,
+        localMaterial: local
+      });
+
       if (!dados.origens.includes(origem)) dados.origens.push(origem);
+
       alert('Entrada registrada com sucesso!');
     }
 
