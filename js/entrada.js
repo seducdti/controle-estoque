@@ -3,15 +3,24 @@
 // ===============================
 
 function getDados() {
-  return JSON.parse(localStorage.getItem('estoque')) || { produtos: [], entradas: [], saidas: [], aquisicoes: [], origens: [] };
+  return JSON.parse(localStorage.getItem('estoque')) || { 
+    produtos: [], 
+    entradas: [], 
+    saidas: [], 
+    aquisicoes: [], 
+    origens: [] 
+  };
 }
+
 function salvarDados(dados) {
   localStorage.setItem('estoque', JSON.stringify(dados));
 }
+
 function hojeISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Popula lista de produtos
 function popularSelectEntrada() {
   const sel = document.getElementById('produtoEntrada');
   if (!sel) return;
@@ -25,6 +34,7 @@ function popularSelectEntrada() {
   });
 }
 
+// Popula lista de origens (datalist)
 function popularOrigens() {
   const datalist = document.getElementById('listaOrigens');
   if (!datalist) return;
@@ -37,6 +47,7 @@ function popularOrigens() {
   });
 }
 
+// Renderiza a tabela de entradas
 function atualizarListaEntradas(filtro = '') {
   const tbody = document.getElementById('listaEntradas');
   if (!tbody) return;
@@ -45,8 +56,8 @@ function atualizarListaEntradas(filtro = '') {
   const entradas = dados.entradas.filter(e =>
     e.produtoNome.toLowerCase().includes(filtro) ||
     e.origem.toLowerCase().includes(filtro) ||
-    e.localMaterial.toLowerCase().includes(filtro) ||
-    e.data.includes(filtro)
+    (e.localMaterial || "").toLowerCase().includes(filtro) ||
+    (e.data || "").includes(filtro)
   );
 
   if (entradas.length === 0) {
@@ -55,15 +66,15 @@ function atualizarListaEntradas(filtro = '') {
   }
 
   tbody.innerHTML = '';
-  entradas.slice().reverse().forEach((e, i) => {
+  entradas.slice().reverse().forEach(e => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${e.produtoID}</td>
       <td>${e.produtoNome}</td>
       <td>${e.quantidade}</td>
-      <td>${e.data}</td>
+      <td>${e.data || '-'}</td>
       <td>${e.origem}</td>
-      <td>${e.localMaterial}</td>
+      <td>${e.localMaterial || '-'}</td>
       <td>
         <button class="btn-editar" onclick="editarEntrada(${dados.entradas.indexOf(e)})">✏️</button>
         <button class="btn-excluir" onclick="excluirEntrada(${dados.entradas.indexOf(e)})">🗑️</button>
@@ -91,11 +102,9 @@ function editarEntrada(index) {
 
   document.getElementById('produtoEntrada').value = dados.produtos.findIndex(p => p.id === entrada.produtoID);
   document.getElementById('quantidadeEntrada').value = entrada.quantidade;
-  document.getElementById('dataEntrada').value = entrada.data;
+  document.getElementById('dataEntrada').value = entrada.data || "";
   document.getElementById('origemEntrada').value = entrada.origem;
-
-  // ALTERADO
-  document.getElementById('localMaterial').value = entrada.localMaterial;
+  document.getElementById('localMaterial').value = entrada.localMaterial || "";
 
   document.getElementById('formEntrada').setAttribute('data-editando', index);
   document.querySelector('#formEntrada button[type="submit"]').textContent = 'Salvar Alterações';
@@ -119,15 +128,14 @@ if (formEntrada) {
 
   formEntrada.addEventListener('submit', e => {
     e.preventDefault();
+
     const idx = document.getElementById('produtoEntrada').value;
     const qtd = Number(document.getElementById('quantidadeEntrada').value);
-    const data = document.getElementById('dataEntrada').value;
+    const data = document.getElementById('dataEntrada').value; // <-- agora opcional
     const origem = document.getElementById('origemEntrada').value.trim();
+    const localMaterial = document.getElementById('localMaterial').value.trim();
 
-    // ALTERADO
-    const local = document.getElementById('localMaterial').value.trim();
-
-    if (idx === '' || qtd <= 0 || !origem || !local) {
+    if (idx === '' || qtd <= 0 || !origem || !localMaterial) {
       alert('Preencha todos os campos corretamente.');
       return;
     }
@@ -139,13 +147,13 @@ if (formEntrada) {
     const editando = formEntrada.getAttribute('data-editando');
 
     if (editando !== null) {
-      dados.entradas[editando] = {
-        produtoID: produto.id,
-        produtoNome: produto.nome,
-        quantidade: qtd,
-        data,
-        origem,
-        localMaterial: local
+      dados.entradas[editando] = { 
+        produtoID: produto.id, 
+        produtoNome: produto.nome, 
+        quantidade: qtd, 
+        data, 
+        origem, 
+        localMaterial 
       };
 
       formEntrada.removeAttribute('data-editando');
@@ -156,13 +164,13 @@ if (formEntrada) {
     } else {
       produto.quantidade = (produto.quantidade || 0) + qtd;
 
-      dados.entradas.push({
-        produtoID: produto.id,
-        produtoNome: produto.nome,
-        quantidade: qtd,
-        data,
-        origem,
-        localMaterial: local
+      dados.entradas.push({ 
+        produtoID: produto.id, 
+        produtoNome: produto.nome, 
+        quantidade: qtd, 
+        data, 
+        origem, 
+        localMaterial 
       });
 
       if (!dados.origens.includes(origem)) dados.origens.push(origem);
@@ -174,14 +182,14 @@ if (formEntrada) {
     popularSelectEntrada();
     popularOrigens();
     atualizarListaEntradas();
+    
     try { atualizarDashboard(); } catch(e) {}
     formEntrada.reset();
   });
 
-  // Filtro de pesquisa
+  // Pesquisa
   document.getElementById('pesquisaEntrada')?.addEventListener('input', e => {
     const valor = e.target.value.trim().toLowerCase();
     atualizarListaEntradas(valor);
   });
 }
-
