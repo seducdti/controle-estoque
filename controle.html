@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Estoque</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Controle de Estoque</h1>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="entrada.html">Entradas</a>
+      <a href="saida.html">Saídas</a>
+      <a href="controle.html" class="active">Controle</a>
+      <button onclick="logout()" class="btn-sair">Sair</button>
+
+    </nav>
+  </header>
+
+  <main>
+    <section class="table-section">
+      <h2>Resumo de Estoque</h2>
+      <div class="table-container">
+        <table class="tabela-estoque">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Produto</th>
+              <th>Entradas</th>
+              <th>Saídas</th>
+              <th>Saldo Atual</th>
+              <th>Nível de Estoque</th>
+            </tr>
+          </thead>
+          <tbody id="listaControle"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/controle.js"></script>
+  <script src="js/cadastro.js"></script>
+</body>
+</html>

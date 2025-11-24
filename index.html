@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Controle de Estoque</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Controle de Estoque</h1>
+    <nav>
+      <a href="index.html" class="active">Dashboard</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="entrada.html">Entradas</a>
+      <a href="saida.html">Saídas</a>
+      <a href="controle.html">Controle</a>
+      <button onclick="logout()" class="btn-sair">Sair</button>
+
+    </nav>
+  </header>
+
+  <main class="dashboard">
+    <h2>Resumo Geral</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>Total de Produtos</h3>
+        <p id="totalProdutos">0</p>
+      </div>
+      <div class="card">
+        <h3>Total em Estoque</h3>
+        <p id="totalEstoque">0</p>
+      </div>
+      <div class="card">
+        <h3>Entradas no Mês</h3>
+        <p id="totalEntradas">0</p>
+      </div>
+      <div class="card">
+        <h3>Saídas no Mês</h3>
+        <p id="totalSaidas">0</p>
+      </div>
+    </div><br>
+    <h2>Resumo Gráfico</h2>
+<canvas id="graficoEstoque" width="400" height="400"></canvas>
+
+<!-- Biblioteca Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="js/app.js"></script>
+
+  </main>
+
+  <footer>
+    <center><small>© 2025 Controle de Estoque</small></center>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

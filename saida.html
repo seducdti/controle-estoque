@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saídas de Produtos</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Saídas de Produtos</h1>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="entrada.html">Entradas</a>
+      <a href="saida.html" class="active">Saídas</a>
+      <a href="controle.html">Controle</a>
+      <button onclick="logout()" class="btn-sair">Sair</button>
+
+    </nav>
+  </header>
+
+  <main>
+    <section class="form-section">
+      <h2>Registrar Saída</h2>
+      <form id="formSaida">
+        <select id="produtoSaida" required>
+          <option value="">-- Selecione o Produto --</option>
+        </select>
+        <input type="number" id="quantidadeSaida" placeholder="Quantidade" min="1" required>
+        <input type="date" id="dataSaida" required>
+        <input list="listaDestinos" id="destinoSaida" placeholder="Destino do Material" required>
+        <datalist id="listaDestinos"></datalist>
+        <button type="submit">Registrar Saída</button>
+        <button type="button" id="cancelarEdicaoSaida" style="display:none;">Cancelar</button>
+      </form>
+    </section>
+
+    <section class="table-section">
+      <div class="table-header">
+        <h2>Histórico de Saídas</h2>
+        <input type="text" id="pesquisaSaida" placeholder="Pesquisar..." />
+      </div>
+
+      <div class="table-container">
+        <table class="tabela-estoque">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Produto</th>
+              <th>Qtd</th>
+              <th>Data</th>
+              <th>Destino</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="listaSaidas"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/saida.js"></script>
+  <script src="js/cadastro.js"></script>
+</body>
+</html>
