@@ -1,6 +1,6 @@
 // 🔐 Login com senha protegida por hash SHA-256
 
-// Hash SHA-256 correto da senha: "T3cn0l0g1@dm1n"
+// Hash SHA-256 
 const HASH_CORRETO = "a43cadbca86b2381d8a2ed72b79324e228b8d31b7669c105fcf4eb5ad54d613a";
 
 // Função para gerar hash SHA-256
@@ -36,3 +36,4 @@ document.getElementById("formLogin").addEventListener("submit", async (e) => {
         alert("Usuário ou senha incorretos!");
     }
 });
+
