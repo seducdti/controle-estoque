@@ -1,3 +1,4 @@
+/* ===== BASE GERAL ===== */
 body { 
   font-family: Arial, sans-serif; 
   background:#f4f4f4; 
@@ -15,20 +16,19 @@ body {
   box-shadow:0 0 8px rgba(0,0,0,0.1); 
 }
 
-h2, h3 { 
-  text-align:center; 
+h1, h2, h3 { 
   color:#333; 
+  text-align:center;
 }
 
+/* ===== FORMULÁRIOS ===== */
 form { 
   display:grid; 
   gap:10px; 
   margin-bottom:20px; 
 }
 
-label { 
-  font-weight:bold; 
-}
+label { font-weight:bold; }
 
 input, select, button { 
   padding:8px; 
@@ -48,6 +48,7 @@ button:hover {
   background:#22538a; 
 }
 
+/* ===== TABELAS ===== */
 table { 
   width:100%; 
   border-collapse:collapse; 
@@ -66,57 +67,7 @@ th {
   color:white; 
 }
 
-nav { 
-  display:flex; 
-  justify-content:center; 
-  gap:10px; 
-  margin-bottom:20px; 
-  flex-wrap:wrap; 
-}
-
-.menu-btn { 
-  background:#dadada; 
-  color:#222; 
-}
-
-.menu-btn.active { 
-  background:#2f6bb0; 
-  color:white; 
-}
-
-section { 
-  display:none; 
-}
-
-section.active { 
-  display:block; 
-}
-
-.btn-acoes { 
-  display:flex; 
-  gap:5px; 
-  justify-content:center; 
-}
-
-.btn-editar { 
-  background:#e4b842; 
-  color:#000; 
-}
-
-.btn-excluir { 
-  background:#d9534f; 
-  color:white; 
-}
-
-#filtrosRelatorio { 
-  display:flex; 
-  gap:10px; 
-  align-items:center; 
-  flex-wrap:wrap; 
-  margin-top:15px; 
-  margin-bottom:15px; 
-}
-
+/* ===== NAVEGAÇÃO ===== */
 nav {
   display:flex;
   justify-content:center;
@@ -145,7 +96,6 @@ nav {
   box-shadow:0 4px 10px rgba(0,0,0,0.15);
 }
 
-/* Quando ativo */
 .menu-btn.active {
   background:#2f6bb0;
   color:white;
@@ -153,3 +103,33 @@ nav {
   transform:translateY(-1px);
 }
 
+/* ===== BOTÕES DE AÇÃO ===== */
+.btn-acoes { 
+  display:flex; 
+  gap:5px; 
+  justify-content:center; 
+}
+
+.btn-editar { 
+  background:#e4b842; 
+  color:#000; 
+}
+
+.btn-excluir { 
+  background:#d9534f; 
+  color:white; 
+}
+
+/* ===== FILTRO RELATÓRIOS ===== */
+#filtrosRelatorio { 
+  display:flex; 
+  gap:10px; 
+  align-items:center; 
+  flex-wrap:wrap; 
+  margin-top:15px; 
+  margin-bottom:15px; 
+}
+
+/* ===== SEÇÕES ===== */
+section { display:none; }
+section.active { display:block; }
