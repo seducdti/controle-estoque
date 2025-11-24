@@ -1,0 +1,300 @@
+/* ======= Tema Claro Moderno ======= */
+:root {
+  --bg: #f9fafb;
+  --card: #ffffff;
+  --text: #222;
+  --muted: #777;
+  --border: #ddd;
+  --primary: #007bff;
+  --primary-hover: #0056b3;
+  --danger: #dc3545;
+  --danger-hover: #a71d2a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ======= Cabeçalho ======= */
+header {
+  background-color: var(--primary);
+  color: white;
+  padding: 12px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+nav {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+nav a:hover,
+nav a.active {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* ======= Conteúdo principal ======= */
+main {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+h2 {
+  margin-top: 28px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 6px;
+}
+
+/* ======= Formulários ======= */
+form {
+  background: var(--card);
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+input, select, button {
+  padding: 8px;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+input, select {
+  flex: 1;
+  min-width: 160px;
+}
+
+button {
+  background: var(--primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s;
+  padding: 8px 16px;
+}
+
+button:hover {
+  background: var(--primary-hover);
+}
+
+button.small {
+  padding: 5px 10px;
+  font-size: 0.9rem;
+}
+
+button.danger {
+  background: var(--danger);
+}
+button.danger:hover {
+  background: var(--danger-hover);
+}
+
+/* ======= Tabela ======= */
+/* ======= Tabela ======= */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+th, td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+th {
+  background-color: #e8eef5; /* Azul bem clarinho */
+  color: #333;
+  font-weight: 600;
+}
+
+td {
+  color: #444;
+}
+
+/* Linhas tipo planilha do Excel */
+tr:nth-child(odd) {
+  background-color: #f9fbfd; /* Cor de fundo mais clara */
+}
+
+tr:nth-child(even) {
+  background-color: #edf3fa; /* Cor um pouco mais forte */
+}
+
+/* Efeito hover */
+tr:hover {
+  background-color: #dce9f8; /* Azul suave ao passar o mouse */
+}
+
+/* Botões dentro da tabela */
+td button {
+  padding: 5px 10px;
+  margin: 0 2px;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+
+/* ======= Cards do Dashboard ======= */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 8px;
+  padding: 18px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.card h3 {
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.card p {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: var(--primary);
+}
+
+/* ======= Estado vazio ======= */
+.muted {
+  color: var(--muted);
+  text-align: center;
+  padding: 10px;
+}
+
+/* ===========================
+   Indicadores de nível de estoque
+=========================== */
+.nivel {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: bold;
+  text-align: center;
+  min-width: 80px;
+}
+
+.nivel.verde {
+  background-color: #2ecc71;
+}
+.nivel.amarelo {
+  background-color: #f1c40f;
+  color: #333;
+}
+.nivel.vermelho {
+  background-color: #e74c3c;
+}
+
+#graficoEstoque {
+  max-width: 400px;
+  max-height: 400px;
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 20px auto;
+}
+
+/* Página de login */
+body.login-page {
+  background-color: #f2f4f8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.login-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  width: 300px;
+  text-align: center;
+}
+
+.login-container h1 {
+  margin-bottom: 1rem;
+}
+
+.login-container input {
+  width: 100%;
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.login-container button {
+  width: 100%;
+  padding: 0.6rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.login-container button:hover {
+  background-color: #0056b3;
+}
+
+.btn-sair {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.btn-sair:hover {
+  background: #b52b38;
+}
