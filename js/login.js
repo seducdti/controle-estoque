@@ -13,7 +13,7 @@ async function gerarHash(texto) {
         .join("");
 }
 
-// Se já estiver logado, vai direto pro dashboard
+// Se já estiver logado, redireciona
 if (localStorage.getItem("usuarioLogado")) {
     window.location.href = "index.html";
 }
@@ -25,14 +25,14 @@ document.getElementById("formLogin").addEventListener("submit", async (e) => {
     const usuario = document.getElementById("usuario").value.trim();
     const senha = document.getElementById("senha").value.trim();
 
+    // Gera hash da senha digitada
     const hashDigitado = await gerarHash(senha);
 
+    // Validação
     if (usuario === "Admin" && hashDigitado === HASH_CORRETO) {
-        localStorage.setItem("usuarioLogado", usuario);
+        localStorage.setItem("usuarioLogado", "Admin");
         window.location.href = "index.html";
     } else {
         alert("Usuário ou senha incorretos!");
     }
 });
-
-
