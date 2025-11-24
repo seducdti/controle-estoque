@@ -1,7 +1,7 @@
 // 🔐 Login com senha protegida por hash SHA-256
 
-// Hash SHA-256 da senha verdadeira: "T3cn0l0g1@dm1n"
-const HASH_CORRETO = "8e013c80e36e2a3d560dc546f3658e535f5e323a4a2d98f807c8cb2737e24ce6";
+// Hash SHA-256 correto da senha: "T3cn0l0g1@dm1n"
+const HASH_CORRETO = "92e4e5e02e76ace50c15dbf248919ca7213224e6389df66f76e41df4abf1477f";
 
 // Função para gerar hash SHA-256
 async function gerarHash(texto) {
