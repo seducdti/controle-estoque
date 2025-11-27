@@ -1,12 +1,18 @@
-// ================================
-// Inicialização do Firebase + Firestore
-// ================================
-
-// Import via ES Modules (para páginas <script type="module">)
+// firebase.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+import { 
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  onSnapshot,
+  deleteDoc,
+  updateDoc,
+  doc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Configuração do seu Firebase
+// Configuração fornecida por você
 const firebaseConfig = {
   apiKey: "AIzaSyDyqiggixe6x3EAUnyU7tD__IDOg9uclyE",
   authDomain: "controle-estoque-14207.firebaseapp.com",
@@ -17,8 +23,21 @@ const firebaseConfig = {
   measurementId: "G-B9NLSQTNBX"
 };
 
-// Iniciar Firebase
+// Inicializa Firebase
 const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
-// Criar instância do Firestore
-export const db = getFirestore(app);
+// Inicializa Firestore
+const db = getFirestore(app);
+
+// Exporta para outros arquivos JS
+export {
+  db,
+  collection,
+  addDoc,
+  getDocs,
+  onSnapshot,
+  deleteDoc,
+  updateDoc,
+  doc
+};
