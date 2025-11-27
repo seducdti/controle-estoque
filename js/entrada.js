@@ -12,6 +12,32 @@ import {
   orderBy,
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// CARREGAR PRODUTOS PARA OS SELECTS
+import { getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+async function carregarProdutos() {
+  const selects = document.querySelectorAll('select[data-produto-select="true"]');
+
+  const snap = await getDocs(collection(db, "produtos"));
+
+  selects.forEach(sel => {
+    sel.innerHTML = `<option value="">-- Selecione o Produto --</option>`;
+  });
+
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    selects.forEach(sel => {
+      const opt = document.createElement("option");
+      opt.value = docSnap.id;
+      opt.textContent = d.nome + ` (ID:${d.id})`;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+// carregar produtos ao abrir a página
+carregarProdutos();
+
 
 const formEntrada = document.getElementById("formEntrada");
 const produtoSelect = document.querySelector('select[data-produto-select="true"]#produtoEntrada') || document.getElementById("produtoEntrada");
@@ -109,3 +135,4 @@ if (formEntrada) formEntrada.addEventListener("submit", registrarEntrada);
 
 // Start listener se existir tabela
 if (tabelaEntradas) iniciarListenerEntradas();
+
