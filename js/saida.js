@@ -13,6 +13,32 @@ import {
   onSnapshot,
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// CARREGAR PRODUTOS PARA OS SELECTS
+import { getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+async function carregarProdutos() {
+  const selects = document.querySelectorAll('select[data-produto-select="true"]');
+
+  const snap = await getDocs(collection(db, "produtos"));
+
+  selects.forEach(sel => {
+    sel.innerHTML = `<option value="">-- Selecione o Produto --</option>`;
+  });
+
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    selects.forEach(sel => {
+      const opt = document.createElement("option");
+      opt.value = docSnap.id;
+      opt.textContent = d.nome + ` (ID:${d.id})`;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+// carregar produtos ao abrir a página
+carregarProdutos();
+
 
 const formSaida = document.getElementById("formSaida");
 const produtoSelectSaida = document.querySelector('select[data-produto-select="true"]#produtoSaida') || document.getElementById("produtoSaida");
@@ -100,3 +126,4 @@ window.excluirSaidaFirestore = excluirSaidaFirestore;
 
 if (formSaida) formSaida.addEventListener("submit", registrarSaida);
 if (tabelaSaidas) iniciarListenerSaidas();
+
