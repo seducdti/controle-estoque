@@ -1,18 +1,10 @@
-// firebase.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-import { 
-  getFirestore,
-  collection,
-  addDoc,
-  getDocs,
-  onSnapshot,
-  deleteDoc,
-  updateDoc,
-  doc
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// js/firebase.js
+// Use versões compatíveis via CDN e exporte "db"
 
-// Configuração fornecida por você
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyDyqiggixe6x3EAUnyU7tD__IDOg9uclyE",
   authDomain: "controle-estoque-14207.firebaseapp.com",
@@ -23,21 +15,10 @@ const firebaseConfig = {
   measurementId: "G-B9NLSQTNBX"
 };
 
-// Inicializa Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+try { getAnalytics(app); } catch(e) { /* analytics pode falhar em localhost sem config */ }
 
-// Inicializa Firestore
 const db = getFirestore(app);
 
-// Exporta para outros arquivos JS
-export {
-  db,
-  collection,
-  addDoc,
-  getDocs,
-  onSnapshot,
-  deleteDoc,
-  updateDoc,
-  doc
-};
+// exporta apenas o que precisa (import { db } in other modules)
+export { db };
