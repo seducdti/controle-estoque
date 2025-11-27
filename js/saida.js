@@ -1,161 +1,102 @@
-// ===============================
-// Controle de Saídas — com Editar, Excluir e Pesquisa
-// ===============================
+// js/saida.js
+// Registra saídas no Firestore e atualiza quantidade do produto
 
-function getDados() {
-  return JSON.parse(localStorage.getItem('estoque')) || { produtos: [], entradas: [], saidas: [], aquisicoes: [], destinos: [] };
-}
-function salvarDados(dados) {
-  localStorage.setItem('estoque', JSON.stringify(dados));
-}
-function hojeISO() {
-  return new Date().toISOString().slice(0, 10);
-}
+import { db } from "./firebase.js";
+import {
+  collection,
+  addDoc,
+  doc,
+  getDoc,
+  updateDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-function popularSelectSaida() {
-  const sel = document.getElementById('produtoSaida');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">-- Selecione o Produto --</option>';
-  const dados = getDados();
-  dados.produtos.forEach((p, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = `${p.nome} (ID: ${p.id})`;
-    sel.appendChild(opt);
-  });
-}
+const formSaida = document.getElementById("formSaida");
+const produtoSelectSaida = document.querySelector('select[data-produto-select="true"]#produtoSaida') || document.getElementById("produtoSaida");
+const quantidadeSaidaInput = document.getElementById("quantidadeSaida");
+const dataSaidaInput = document.getElementById("dataSaida");
+const destinoInput = document.getElementById("destinoSaida");
+const tabelaSaidas = document.getElementById("listaSaidas");
 
-function popularDestinos() {
-  const datalist = document.getElementById('listaDestinos');
-  if (!datalist) return;
-  const dados = getDados();
-  datalist.innerHTML = '';
-  (dados.destinos || []).forEach(dest => {
-    const opt = document.createElement('option');
-    opt.value = dest;
-    datalist.appendChild(opt);
-  });
-}
+const saidasCol = collection(db, "saidas");
 
-function atualizarListaSaidas(filtro = '') {
-  const tbody = document.getElementById('listaSaidas');
-  if (!tbody) return;
-  const dados = getDados();
-
-  const saidas = dados.saidas.filter(s =>
-    s.produtoNome.toLowerCase().includes(filtro) ||
-    s.destino.toLowerCase().includes(filtro) ||
-    s.data.includes(filtro)
-  );
-
-  if (saidas.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="muted">Nenhuma saída encontrada</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = '';
-  saidas.slice().reverse().forEach(s => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${s.produtoID}</td>
-      <td>${s.produtoNome}</td>
-      <td>${s.quantidade}</td>
-      <td>${s.data}</td>
-      <td>${s.destino}</td>
-      <td>
-        <button class="btn-editar" onclick="editarSaida(${dados.saidas.indexOf(s)})">✏️</button>
-        <button class="btn-excluir" onclick="excluirSaida(${dados.saidas.indexOf(s)})">🗑️</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
+// Listener histórico saídas
+function iniciarListenerSaidas() {
+  const q = query(saidasCol, orderBy("data", "desc"));
+  onSnapshot(q, (snap) => {
+    if (!tabelaSaidas) return;
+    tabelaSaidas.innerHTML = "";
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${d.produtoNome || "-"}</td>
+        <td>${d.quantidade}</td>
+        <td>${d.data ? (new Date(d.data)).toLocaleString() : "-"}</td>
+        <td>${d.destino || "-"}</td>
+        <td>
+          <button onclick="excluirSaidaFirestore('${docSnap.id}')">🗑️</button>
+        </td>
+      `;
+      tabelaSaidas.appendChild(tr);
+    });
+  }, err => console.error("Erro listener saidas:", err));
 }
 
-// Excluir saída
-function excluirSaida(index) {
-  const dados = getDados();
-  if (!confirm('Deseja excluir esta saída?')) return;
-  dados.saidas.splice(index, 1);
-  salvarDados(dados);
-  atualizarListaSaidas();
-}
+// Registrar saída
+async function registrarSaida(e) {
+  if (e) e.preventDefault();
+  const produtoDocId = produtoSelectSaida?.value;
+  const qtd = Number(quantidadeSaidaInput?.value || 0);
+  const dataVal = dataSaidaInput?.value ? new Date(dataSaidaInput.value).toISOString() : new Date().toISOString();
+  const destino = destinoInput?.value?.trim() || "";
 
-// Editar saída
-function editarSaida(index) {
-  const dados = getDados();
-  const saida = dados.saidas[index];
-  if (!saida) return;
+  if (!produtoDocId || !qtd || qtd <= 0) return alert("Selecione produto e informe quantidade válida.");
 
-  document.getElementById('produtoSaida').value = dados.produtos.findIndex(p => p.id === saida.produtoID);
-  document.getElementById('quantidadeSaida').value = saida.quantidade;
-  document.getElementById('dataSaida').value = saida.data;
-  document.getElementById('destinoSaida').value = saida.destino;
+  try {
+    const pRef = doc(db, "produtos", produtoDocId);
+    const pSnap = await getDoc(pRef);
+    if (!pSnap.exists()) return alert("Produto não encontrado.");
 
-  const form = document.getElementById('formSaida');
-  form.setAttribute('data-editando', index);
-  document.querySelector('#formSaida button[type="submit"]').textContent = 'Salvar Alterações';
-  document.getElementById('cancelarEdicaoSaida').style.display = 'inline';
-}
+    const atual = Number(pSnap.data().quantidade || 0);
+    if (qtd > atual) return alert("Estoque insuficiente.");
 
-// Cancelar edição
-document.getElementById('cancelarEdicaoSaida')?.addEventListener('click', () => {
-  const form = document.getElementById('formSaida');
-  form.removeAttribute('data-editando');
-  form.reset();
-  document.querySelector('#formSaida button[type="submit"]').textContent = 'Registrar Saída';
-  document.getElementById('cancelarEdicaoSaida').style.display = 'none';
-});
+    // cria saída
+    await addDoc(saidasCol, {
+      produtoId: produtoDocId,
+      produtoNome: pSnap.data().nome,
+      quantidade: qtd,
+      data: dataVal,
+      destino
+    });
 
-const formSaida = document.getElementById('formSaida');
-if (formSaida) {
-  popularSelectSaida();
-  popularDestinos();
-  atualizarListaSaidas();
+    // atualiza estoque
+    await updateDoc(pRef, { quantidade: atual - qtd });
 
-  formSaida.addEventListener('submit', e => {
-    e.preventDefault();
-
-    const idx = document.getElementById('produtoSaida').value;
-    const qtd = Number(document.getElementById('quantidadeSaida').value);
-    const data = document.getElementById('dataSaida').value || hojeISO();
-    const destino = document.getElementById('destinoSaida').value.trim();
-
-    if (idx === '' || qtd <= 0 || !destino) {
-      alert('Preencha todos os campos corretamente.');
-      return;
-    }
-
-    const dados = getDados();
-    const produto = dados.produtos[idx];
-    if (!produto) return alert('Produto inválido.');
-    if (produto.quantidade < qtd) return alert('Estoque insuficiente.');
-
-    const editando = formSaida.getAttribute('data-editando');
-
-    if (editando !== null) {
-      dados.saidas[editando] = { produtoID: produto.id, produtoNome: produto.nome, quantidade: qtd, data, destino };
-      formSaida.removeAttribute('data-editando');
-      document.querySelector('#formSaida button[type="submit"]').textContent = 'Registrar Saída';
-      document.getElementById('cancelarEdicaoSaida').style.display = 'none';
-      alert('Saída atualizada com sucesso!');
-    } else {
-      produto.quantidade -= qtd;
-      dados.saidas.push({ produtoID: produto.id, produtoNome: produto.nome, quantidade: qtd, data, destino });
-      if (!dados.destinos.includes(destino)) dados.destinos.push(destino);
-      alert('Saída registrada com sucesso!');
-    }
-
-    salvarDados(dados);
-    popularSelectSaida();
-    popularDestinos();
-    atualizarListaSaidas();
-    try { atualizarDashboard(); } catch(e) {}
     formSaida.reset();
-  });
-
-  // Filtro de pesquisa
-  document.getElementById('pesquisaSaida')?.addEventListener('input', e => {
-    const valor = e.target.value.trim().toLowerCase();
-    atualizarListaSaidas(valor);
-  });
+    alert("Saída registrada com sucesso!");
+  } catch (err) {
+    console.error("Erro registrar saída:", err);
+    alert("Erro ao registrar saída (veja console).");
+  }
 }
+
+// Excluir saída (não reverte estoque automaticamente)
+async function excluirSaidaFirestore(docId) {
+  if (!confirm("Excluir este registro de saída? (não reverte estoque automaticamente)")) return;
+  try {
+    await deleteDoc(doc(db, "saidas", docId));
+    alert("Saída excluída.");
+  } catch (err) {
+    console.error("Erro excluir saída:", err);
+    alert("Erro ao excluir (veja console).");
+  }
+}
+
+window.excluirSaidaFirestore = excluirSaidaFirestore;
+
+if (formSaida) formSaida.addEventListener("submit", registrarSaida);
+if (tabelaSaidas) iniciarListenerSaidas();
