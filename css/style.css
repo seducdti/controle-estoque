@@ -298,3 +298,20 @@ body.login-page {
 .btn-sair:hover {
   background: #b52b38;
 }
+table thead th {
+    text-align: left;
+    padding: 10px;
+}
+
+table tbody td {
+    padding: 8px;
+}
+
+th:nth-child(1), td:nth-child(1) { width: 80px; }   /* ID */
+th:nth-child(2), td:nth-child(2) { width: 200px; }  /* Produto */
+th:nth-child(3), td:nth-child(3) { width: 80px; }   /* Quantidade */
+th:nth-child(4), td:nth-child(4) { width: 180px; }  /* Data */
+th:nth-child(5), td:nth-child(5) { width: 150px; }  /* Origem */
+th:nth-child(6), td:nth-child(6) { width: 150px; }  /* Local */
+th:nth-child(7), td:nth-child(7) { width: 90px; text-align: center; } /* Ações */
+
