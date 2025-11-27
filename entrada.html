@@ -23,7 +23,7 @@
     <section class="form-section">
       <h2>Registrar Entrada</h2>
       <form id="formEntrada">
-        <select id="produtoEntrada" required>
+        <select id="produtoEntrada" data-produto-select="true" required>
           <option value="">-- Selecione o Produto --</option>
         </select>
 
@@ -33,7 +33,6 @@
         <input list="listaOrigens" id="origemEntrada" placeholder="Origem do Material">
         <datalist id="listaOrigens"></datalist>
 
-        <!-- ALTERADO AQUI -->
         <input type="text" id="localMaterial" placeholder="Local do Material">
 
         <button type="submit">Registrar Entrada</button>
@@ -56,10 +55,7 @@
               <th>Qtd</th>
               <th>Data</th>
               <th>Origem</th>
-
-              <!-- ALTERADO AQUI -->
               <th>Local</th>
-
               <th>Ações</th>
             </tr>
           </thead>
@@ -69,13 +65,7 @@
     </section>
   </main>
 
-<script type="module" src="js/firebase.js"></script>
-<script type="module" src="js/entrada.js"></script>
-
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module" src="js/entrada.js"></script>
 </body>
 </html>
-
-
-
-
-
