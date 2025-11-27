@@ -1,195 +1,111 @@
-// ===============================
-// Controle de Entradas — com Editar, Excluir e Pesquisa
-// ===============================
+// js/entrada.js
+// Registra entradas no Firestore e atualiza quantidade do produto
 
-function getDados() {
-  return JSON.parse(localStorage.getItem('estoque')) || { 
-    produtos: [], 
-    entradas: [], 
-    saidas: [], 
-    aquisicoes: [], 
-    origens: [] 
-  };
+import { db } from "./firebase.js";
+import {
+  collection,
+  addDoc,
+  doc,
+  getDoc,
+  updateDoc,
+  query,
+  orderBy,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const formEntrada = document.getElementById("formEntrada");
+const produtoSelect = document.querySelector('select[data-produto-select="true"]#produtoEntrada') || document.getElementById("produtoEntrada");
+const quantidadeInput = document.getElementById("quantidadeEntrada");
+const dataInput = document.getElementById("dataEntrada");
+const origemInput = document.getElementById("origemEntrada");
+const localInput = document.getElementById("localMaterial");
+const tabelaEntradas = document.getElementById("listaEntradas");
+
+const entradasCol = collection(db, "entradas");
+const produtosCol = collection(db, "produtos");
+
+// Carrega histórico em tempo real (opcional, útil na tabela)
+function iniciarListenerEntradas() {
+  const q = query(entradasCol, orderBy("data", "desc"));
+  onSnapshot(q, (snap) => {
+    if (!tabelaEntradas) return;
+    tabelaEntradas.innerHTML = "";
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${d.produtoNome || "-"}</td>
+        <td>${d.quantidade}</td>
+        <td>${d.data ? (new Date(d.data)).toLocaleString() : "-"}</td>
+        <td>${d.origem || "-"}</td>
+        <td>${d.localMaterial || "-"}</td>
+        <td>
+          <button onclick="excluirEntradaFirestore('${docSnap.id}')">🗑️</button>
+        </td>
+      `;
+      tabelaEntradas.appendChild(tr);
+    });
+  }, err => console.error("Erro listener entradas:", err));
 }
 
-function salvarDados(dados) {
-  localStorage.setItem('estoque', JSON.stringify(dados));
-}
+// Registrar entrada: cria doc em entradas e atualiza quantidade do produto
+async function registrarEntrada(e) {
+  if (e) e.preventDefault();
+  const produtoDocId = produtoSelect?.value;
+  const qtd = Number(quantidadeInput?.value || 0);
+  const dataVal = dataInput?.value ? new Date(dataInput.value).toISOString() : new Date().toISOString();
+  const origem = origemInput?.value?.trim() || "";
+  const localMaterial = localInput?.value?.trim() || "";
 
-function hojeISO() {
-  return new Date().toISOString().slice(0, 10);
-}
+  if (!produtoDocId || !qtd || qtd <= 0) return alert("Selecione produto e informe quantidade válida.");
 
-// Popula lista de produtos
-function popularSelectEntrada() {
-  const sel = document.getElementById('produtoEntrada');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">-- Selecione o Produto --</option>';
-  const dados = getDados();
-  dados.produtos.forEach((p, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = `${p.nome} (ID: ${p.id})`;
-    sel.appendChild(opt);
-  });
-}
+  try {
+    // pega produto atual
+    const pRef = doc(db, "produtos", produtoDocId);
+    const pSnap = await getDoc(pRef);
+    if (!pSnap.exists()) return alert("Produto não encontrado.");
 
-// Popula lista de origens (datalist)
-function popularOrigens() {
-  const datalist = document.getElementById('listaOrigens');
-  if (!datalist) return;
-  const dados = getDados();
-  datalist.innerHTML = '';
-  (dados.origens || []).forEach(org => {
-    const opt = document.createElement('option');
-    opt.value = org;
-    datalist.appendChild(opt);
-  });
-}
+    const pData = pSnap.data();
+    const atual = Number(pData.quantidade || 0);
 
-// Renderiza a tabela de entradas
-function atualizarListaEntradas(filtro = '') {
-  const tbody = document.getElementById('listaEntradas');
-  if (!tbody) return;
-  const dados = getDados();
+    // cria entrada
+    await addDoc(entradasCol, {
+      produtoId: produtoDocId,
+      produtoNome: pData.nome,
+      quantidade: qtd,
+      data: dataVal,
+      origem,
+      localMaterial
+    });
 
-  const entradas = dados.entradas.filter(e =>
-    e.produtoNome.toLowerCase().includes(filtro) ||
-    e.origem.toLowerCase().includes(filtro) ||
-    (e.localMaterial || "").toLowerCase().includes(filtro) ||
-    (e.data || "").includes(filtro)
-  );
+    // atualiza quantidade do produto
+    await updateDoc(pRef, { quantidade: atual + qtd });
 
-  if (entradas.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="muted">Nenhuma entrada encontrada</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = '';
-  entradas.slice().reverse().forEach(e => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${e.produtoID}</td>
-      <td>${e.produtoNome}</td>
-      <td>${e.quantidade}</td>
-      <td>${e.data || '-'}</td>
-      <td>${e.origem}</td>
-      <td>${e.localMaterial || '-'}</td>
-      <td>
-        <button class="btn-editar" onclick="editarEntrada(${dados.entradas.indexOf(e)})">✏️</button>
-        <button class="btn-excluir" onclick="excluirEntrada(${dados.entradas.indexOf(e)})">🗑️</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-// Excluir entrada
-function excluirEntrada(index) {
-  const dados = getDados();
-  if (!confirm('Deseja excluir esta entrada?')) return;
-
-  dados.entradas.splice(index, 1);
-  salvarDados(dados);
-  atualizarListaEntradas();
-}
-
-// Editar entrada
-function editarEntrada(index) {
-  const dados = getDados();
-  const entrada = dados.entradas[index];
-  if (!entrada) return;
-
-  document.getElementById('produtoEntrada').value = dados.produtos.findIndex(p => p.id === entrada.produtoID);
-  document.getElementById('quantidadeEntrada').value = entrada.quantidade;
-  document.getElementById('dataEntrada').value = entrada.data || "";
-  document.getElementById('origemEntrada').value = entrada.origem;
-  document.getElementById('localMaterial').value = entrada.localMaterial || "";
-
-  document.getElementById('formEntrada').setAttribute('data-editando', index);
-  document.querySelector('#formEntrada button[type="submit"]').textContent = 'Salvar Alterações';
-  document.getElementById('cancelarEdicao').style.display = 'inline';
-}
-
-// Cancelar edição
-document.getElementById('cancelarEdicao')?.addEventListener('click', () => {
-  const form = document.getElementById('formEntrada');
-  form.removeAttribute('data-editando');
-  form.reset();
-  document.querySelector('#formEntrada button[type="submit"]').textContent = 'Registrar Entrada';
-  document.getElementById('cancelarEdicao').style.display = 'none';
-});
-
-const formEntrada = document.getElementById('formEntrada');
-if (formEntrada) {
-  popularSelectEntrada();
-  popularOrigens();
-  atualizarListaEntradas();
-
-  formEntrada.addEventListener('submit', e => {
-    e.preventDefault();
-
-    const idx = document.getElementById('produtoEntrada').value;
-    const qtd = Number(document.getElementById('quantidadeEntrada').value);
-    const data = document.getElementById('dataEntrada').value; // <-- agora opcional
-    const origem = document.getElementById('origemEntrada').value.trim();
-    const localMaterial = document.getElementById('localMaterial').value.trim();
-
-    if (idx === '' || qtd <= 0 || !origem || !localMaterial) {
-      alert('Preencha todos os campos corretamente.');
-      return;
-    }
-
-    const dados = getDados();
-    const produto = dados.produtos[idx];
-    if (!produto) return alert('Produto inválido.');
-
-    const editando = formEntrada.getAttribute('data-editando');
-
-    if (editando !== null) {
-      dados.entradas[editando] = { 
-        produtoID: produto.id, 
-        produtoNome: produto.nome, 
-        quantidade: qtd, 
-        data, 
-        origem, 
-        localMaterial 
-      };
-
-      formEntrada.removeAttribute('data-editando');
-      document.querySelector('#formEntrada button[type="submit"]').textContent = 'Registrar Entrada';
-      document.getElementById('cancelarEdicao').style.display = 'none';
-      alert('Entrada atualizada com sucesso!');
-
-    } else {
-      produto.quantidade = (produto.quantidade || 0) + qtd;
-
-      dados.entradas.push({ 
-        produtoID: produto.id, 
-        produtoNome: produto.nome, 
-        quantidade: qtd, 
-        data, 
-        origem, 
-        localMaterial 
-      });
-
-      if (!dados.origens.includes(origem)) dados.origens.push(origem);
-
-      alert('Entrada registrada com sucesso!');
-    }
-
-    salvarDados(dados);
-    popularSelectEntrada();
-    popularOrigens();
-    atualizarListaEntradas();
-    
-    try { atualizarDashboard(); } catch(e) {}
     formEntrada.reset();
-  });
-
-  // Pesquisa
-  document.getElementById('pesquisaEntrada')?.addEventListener('input', e => {
-    const valor = e.target.value.trim().toLowerCase();
-    atualizarListaEntradas(valor);
-  });
+    alert("Entrada registrada com sucesso!");
+  } catch (err) {
+    console.error("Erro registrar entrada:", err);
+    alert("Erro ao registrar entrada (veja console).");
+  }
 }
+
+// Excluir entrada (opcional): só para histórico — NÃO reverte estoque automático aqui
+async function excluirEntradaFirestore(docId) {
+  if (!confirm("Excluir este registro de entrada? (não reverte estoque automaticamente)")) return;
+  try {
+    await deleteDoc(doc(db, "entradas", docId));
+    alert("Entrada excluída.");
+  } catch (err) {
+    console.error("Erro excluir entrada:", err);
+    alert("Erro ao excluir (veja console).");
+  }
+}
+
+// Expor função global
+window.excluirEntradaFirestore = excluirEntradaFirestore;
+
+// Hook do form
+if (formEntrada) formEntrada.addEventListener("submit", registrarEntrada);
+
+// Start listener se existir tabela
+if (tabelaEntradas) iniciarListenerEntradas();
