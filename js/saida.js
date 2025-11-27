@@ -1,5 +1,6 @@
 // js/saida.js
-// Registra saídas no Firestore e atualiza quantidade do produto
+// Registra saídas no Firestore, edita e exclui (com opção de reverter estoque)
+// Requisitos: importar ./firebase.js que exporte `db`
 
 import { db } from "./firebase.js";
 import {
@@ -11,34 +12,9 @@ import {
   query,
   orderBy,
   onSnapshot,
-  deleteDoc
+  deleteDoc,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-// CARREGAR PRODUTOS PARA OS SELECTS
-import { getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-async function carregarProdutos() {
-  const selects = document.querySelectorAll('select[data-produto-select="true"]');
-
-  const snap = await getDocs(collection(db, "produtos"));
-
-  selects.forEach(sel => {
-    sel.innerHTML = `<option value="">-- Selecione o Produto --</option>`;
-  });
-
-  snap.forEach(docSnap => {
-    const d = docSnap.data();
-    selects.forEach(sel => {
-      const opt = document.createElement("option");
-      opt.value = docSnap.id;
-      opt.textContent = d.nome + ` (ID:${d.id})`;
-      sel.appendChild(opt);
-    });
-  });
-}
-
-// carregar produtos ao abrir a página
-carregarProdutos();
-
 
 const formSaida = document.getElementById("formSaida");
 const produtoSelectSaida = document.querySelector('select[data-produto-select="true"]#produtoSaida') || document.getElementById("produtoSaida");
@@ -46,38 +22,119 @@ const quantidadeSaidaInput = document.getElementById("quantidadeSaida");
 const dataSaidaInput = document.getElementById("dataSaida");
 const destinoInput = document.getElementById("destinoSaida");
 const tabelaSaidas = document.getElementById("listaSaidas");
+const cancelarEdicaoSaida = document.getElementById("cancelarEdicaoSaida");
 
 const saidasCol = collection(db, "saidas");
+const produtosColRef = collection(db, "produtos");
 
-// Listener histórico saídas
+// carregar produtos para selects (fallback)
+export async function carregarProdutosParaSelectsSaida() {
+  const selects = document.querySelectorAll('select[data-produto-select="true"]');
+  if (!selects) return;
+  try {
+    const snap = await getDocs(produtosColRef);
+    selects.forEach(sel => sel.innerHTML = `<option value="">-- Selecione o Produto --</option>`);
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      selects.forEach(sel => {
+        const opt = document.createElement("option");
+        opt.value = docSnap.id;
+        opt.textContent = `${d.nome} (ID:${d.id ?? "-"})`;
+        sel.appendChild(opt);
+      });
+    });
+  } catch (err) {
+    console.error("Erro carregar produtos (saida):", err);
+  }
+}
+carregarProdutosParaSelectsSaida();
+
+// helper format date
+function formatDisplayDate(iso) {
+  if (!iso) return "";
+  try { return new Date(iso).toLocaleString(); } catch { return ""; }
+}
+
+// listener saídas
 function iniciarListenerSaidas() {
   const q = query(saidasCol, orderBy("data", "desc"));
   onSnapshot(q, (snap) => {
     if (!tabelaSaidas) return;
     tabelaSaidas.innerHTML = "";
     snap.forEach(docSnap => {
+      const id = docSnap.id;
       const d = docSnap.data();
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${d.produtoNome || "-"}</td>
-        <td>${d.quantidade}</td>
-        <td>${d.data ? (new Date(d.data)).toLocaleString() : "-"}</td>
-        <td>${d.destino || "-"}</td>
+        <td>${d.produtoId ?? "-"}</td>
+        <td>${d.produtoNome ?? "-"}</td>
+        <td>${d.quantidade ?? "-"}</td>
+        <td>${formatDisplayDate(d.data)}</td>
+        <td>${d.destino ?? ""}</td>
         <td>
-          <button onclick="excluirSaidaFirestore('${docSnap.id}')">🗑️</button>
+          <button class="btn-editar" data-id="${id}" title="Editar">✏️</button>
+          <button class="btn-excluir" data-id="${id}" title="Excluir">🗑️</button>
         </td>
       `;
       tabelaSaidas.appendChild(tr);
     });
+
+    tabelaSaidas.querySelectorAll('.btn-excluir').forEach(btn => {
+      btn.onclick = async () => {
+        const docId = btn.dataset.id;
+        if (!confirm("Excluir este registro de saída? Deseja também reverter a quantidade no estoque?")) return;
+        const reverter = confirm("Reverter quantidade no estoque?");
+        try {
+          if (reverter) {
+            const snap = await getDoc(doc(db, "saidas", docId));
+            if (snap.exists()) {
+              const sd = snap.data();
+              const pRef = doc(db, "produtos", sd.produtoId);
+              const pSnap = await getDoc(pRef);
+              if (pSnap.exists()) {
+                const atual = Number(pSnap.data().quantidade || 0);
+                await updateDoc(pRef, { quantidade: atual + Number(sd.quantidade || 0) });
+              }
+            }
+          }
+          await deleteDoc(doc(db, "saidas", docId));
+          alert("Registro excluído.");
+        } catch (err) {
+          console.error("Erro excluir saida:", err);
+          alert("Erro ao excluir (veja console).");
+        }
+      };
+    });
+
+    tabelaSaidas.querySelectorAll('.btn-editar').forEach(btn => {
+      btn.onclick = async () => {
+        const docId = btn.dataset.id;
+        try {
+          const snap = await getDoc(doc(db, "saidas", docId));
+          if (!snap.exists()) return alert("Registro não encontrado.");
+          const d = snap.data();
+          produtoSelectSaida.value = d.produtoId || "";
+          quantidadeSaidaInput.value = d.quantidade || "";
+          dataSaidaInput.value = d.data ? new Date(d.data).toISOString().slice(0,10) : "";
+          destinoInput.value = d.destino || "";
+          formSaida.setAttribute("data-editing-docid", docId);
+          document.querySelector('#formSaida button[type="submit"]').textContent = 'Salvar Alterações';
+          cancelarEdicaoSaida.style.display = 'inline';
+          formSaida.scrollIntoView({ behavior: "smooth" });
+        } catch (err) { console.error(err); }
+      };
+    });
+
   }, err => console.error("Erro listener saidas:", err));
 }
+if (tabelaSaidas) iniciarListenerSaidas();
 
-// Registrar saída
+// registrar / editar saida
 async function registrarSaida(e) {
   if (e) e.preventDefault();
   const produtoDocId = produtoSelectSaida?.value;
   const qtd = Number(quantidadeSaidaInput?.value || 0);
-  const dataVal = dataSaidaInput?.value ? new Date(dataSaidaInput.value).toISOString() : new Date().toISOString();
+  const dataVal = dataSaidaInput?.value ? new Date(dataSaidaInput.value).toISOString() : null;
   const destino = destinoInput?.value?.trim() || "";
 
   if (!produtoDocId || !qtd || qtd <= 0) return alert("Selecione produto e informe quantidade válida.");
@@ -86,44 +143,61 @@ async function registrarSaida(e) {
     const pRef = doc(db, "produtos", produtoDocId);
     const pSnap = await getDoc(pRef);
     if (!pSnap.exists()) return alert("Produto não encontrado.");
-
     const atual = Number(pSnap.data().quantidade || 0);
-    if (qtd > atual) return alert("Estoque insuficiente.");
 
-    // cria saída
-    await addDoc(saidasCol, {
-      produtoId: produtoDocId,
-      produtoNome: pSnap.data().nome,
-      quantidade: qtd,
-      data: dataVal,
-      destino
-    });
+    const editDocId = formSaida.getAttribute("data-editing-docid") || null;
 
-    // atualiza estoque
-    await updateDoc(pRef, { quantidade: atual - qtd });
+    if (editDocId) {
+      // edição: ajustar estoque pela diferença
+      const oldSnap = await getDoc(doc(db, "saidas", editDocId));
+      if (!oldSnap.exists()) return alert("Registro original não encontrado.");
+      const old = oldSnap.data();
+      const oldQtd = Number(old.quantidade || 0);
+      const diff = qtd - oldQtd; // positive -> reduce more (because it's a saída), negative -> increase stock
+      // update saída
+      await updateDoc(doc(db, "saidas", editDocId), {
+        produtoId: produtoDocId,
+        produtoNome: pSnap.data().nome,
+        quantidade: qtd,
+        data: dataVal,
+        destino
+      });
+      // ajustar produto: since it's a saída, atual - diff
+      const novo = atual - diff;
+      await updateDoc(pRef, { quantidade: Math.max(0, novo) });
 
-    formSaida.reset();
-    alert("Saída registrada com sucesso!");
+      alert("Saída atualizada com sucesso!");
+      formSaida.removeAttribute("data-editing-docid");
+      document.querySelector('#formSaida button[type="submit"]').textContent = 'Registrar Saída';
+      cancelarEdicaoSaida.style.display = 'none';
+    } else {
+      // nova saída
+      if (qtd > atual) return alert("Estoque insuficiente.");
+      await addDoc(saidasCol, {
+        produtoId: produtoDocId,
+        produtoNome: pSnap.data().nome,
+        quantidade: qtd,
+        data: dataVal,
+        destino
+      });
+      await updateDoc(pRef, { quantidade: atual - qtd });
+      alert("Saída registrada com sucesso!");
+      formSaida.reset();
+    }
+    try { carregarProdutosParaSelectsSaida(); } catch {}
   } catch (err) {
-    console.error("Erro registrar saída:", err);
-    alert("Erro ao registrar saída (veja console).");
+    console.error("Erro registrar/editar saída:", err);
+    alert("Erro ao processar saída (veja console).");
   }
 }
 
-// Excluir saída (não reverte estoque automaticamente)
-async function excluirSaidaFirestore(docId) {
-  if (!confirm("Excluir este registro de saída? (não reverte estoque automaticamente)")) return;
-  try {
-    await deleteDoc(doc(db, "saidas", docId));
-    alert("Saída excluída.");
-  } catch (err) {
-    console.error("Erro excluir saída:", err);
-    alert("Erro ao excluir (veja console).");
-  }
-}
+// cancelar edição
+cancelarEdicaoSaida?.addEventListener('click', () => {
+  formSaida.removeAttribute("data-editing-docid");
+  document.querySelector('#formSaida button[type="submit"]').textContent = 'Registrar Saída';
+  cancelarEdicaoSaida.style.display = 'none';
+  formSaida.reset();
+});
 
-window.excluirSaidaFirestore = excluirSaidaFirestore;
-
+// hooks
 if (formSaida) formSaida.addEventListener("submit", registrarSaida);
-if (tabelaSaidas) iniciarListenerSaidas();
-
