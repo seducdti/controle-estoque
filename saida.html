@@ -16,7 +16,6 @@
       <a href="saida.html" class="active">Saídas</a>
       <a href="controle.html">Controle</a>
       <button onclick="logout()" class="btn-sair">Sair</button>
-
     </nav>
   </header>
 
@@ -24,7 +23,7 @@
     <section class="form-section">
       <h2>Registrar Saída</h2>
       <form id="formSaida">
-        <select id="produtoSaida" required>
+        <select id="produtoSaida" data-produto-select="true" required>
           <option value="">-- Selecione o Produto --</option>
         </select>
         <input type="number" id="quantidadeSaida" placeholder="Quantidade" min="1" required>
@@ -60,9 +59,7 @@
     </section>
   </main>
 
- <script type="module" src="js/firebase.js"></script>
-<script type="module" src="js/saida.js"></script>
-
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module" src="js/saida.js"></script>
 </body>
 </html>
-
