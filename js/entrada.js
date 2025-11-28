@@ -163,10 +163,15 @@ async function registrarEntrada(e) {
   if (e) e.preventDefault();
   const produtoDocId = produtoSelect?.value;
   const qtd = Number(quantidadeInput?.value || 0);
-  // **se o usuário não preencher a data, armazenamos null** (para exibir vazio)
-  const dataVal = dataInput?.value ? new Date(dataInput.value).toISOString() : null;
+
+  // Se o usuário não informar a data, salvar string vazia
+  const dataVal = dataInput?.value
+      ? new Date(dataInput.value).toISOString()
+      : "";
+
   const origem = origemInput?.value?.trim() || "";
   const localMaterial = localInput?.value?.trim() || "";
+
 
   if (!produtoDocId || !qtd || qtd <= 0) return alert("Selecione produto e informe quantidade válida.");
 
@@ -230,3 +235,4 @@ cancelarBtn?.addEventListener('click', () => resetFormState());
 
 // hook do form
 if (formEntrada) formEntrada.addEventListener("submit", registrarEntrada);
+
