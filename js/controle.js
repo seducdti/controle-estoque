@@ -16,6 +16,7 @@ const produtosCol = collection(db, "produtos");
 const entradasCol = collection(db, "entradas");
 const saidasCol = collection(db, "saidas");
 
+// Define o nível de estoque
 function calcularNivelEstoque(qtd, max) {
   const pct = (qtd / max) * 100;
   if (pct <= 25) return { texto: "Baixo", cor: "vermelho" };
@@ -30,36 +31,37 @@ function iniciarControle() {
   let listaEntradas = [];
   let listaSaidas = [];
 
-  // Carregar produtos
+  // ----- Carregar produtos -----
   onSnapshot(query(produtosCol, orderBy("nome")), snap => {
     listaProdutos = snap.docs.map(doc => ({
       id: doc.id,
-      ...doc.data(),
-      quantidade: Number(doc.data().quantidade || 0) // Garantindo número
+      nome: doc.data().nome,
+      quantidade: Number(doc.data().quantidade || 0)
     }));
     atualizarTabela();
   });
 
-  // Carregar entradas
+  // ----- Carregar entradas -----
   onSnapshot(entradasCol, snap => {
     listaEntradas = snap.docs.map(doc => ({
       id: doc.id,
-      ...doc.data(),
+      produtoId: doc.data().produtoId,
       quantidade: Number(doc.data().quantidade || 0)
     }));
     atualizarTabela();
   });
 
-  // Carregar saídas
+  // ----- Carregar saídas -----
   onSnapshot(saidasCol, snap => {
     listaSaidas = snap.docs.map(doc => ({
       id: doc.id,
-      ...doc.data(),
+      produtoId: doc.data().produtoId,
       quantidade: Number(doc.data().quantidade || 0)
     }));
     atualizarTabela();
   });
 
+  // ----- Montar tabela -----
   function atualizarTabela() {
     if (listaProdutos.length === 0) {
       tabela.innerHTML = `
@@ -73,22 +75,23 @@ function iniciarControle() {
     tabela.innerHTML = "";
 
     const maxEstoque = Math.max(
-      ...listaProdutos.map(p => Number(p.quantidade || 0)),
+      ...listaProdutos.map(p => p.quantidade),
       1
     );
 
     listaProdutos.forEach(prod => {
-      // Somar ENTRADAS do produto
+
+      // Somatório das entradas do produto
       const entradas = listaEntradas
         .filter(e => e.produtoId === prod.id)
-        .reduce((total, e) => total + Number(e.quantidade || 0), 0);
+        .reduce((total, e) => total + e.quantidade, 0);
 
-      // Somar SAÍDAS do produto
+      // Somatório das saídas do produto
       const saidas = listaSaidas
         .filter(s => s.produtoId === prod.id)
-        .reduce((total, s) => total + Number(s.quantidade || 0), 0);
+        .reduce((total, s) => total + s.quantidade, 0);
 
-      // CALCULAR SALDO REAL
+      // Saldo real = estoque inicial + entradas - saídas
       const saldo = prod.quantidade + entradas - saidas;
 
       const nivel = calcularNivelEstoque(saldo, maxEstoque);
