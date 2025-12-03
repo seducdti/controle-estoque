@@ -1,10 +1,32 @@
 // ===============================
-// controle.js — Resumo visual do estoque
+// controle.js — Resumo visual do estoque (Firebase)
 // ===============================
 
-function getDados() {
-  return JSON.parse(localStorage.getItem('estoque')) || { produtos: [], entradas: [], saidas: [] };
+import { db } from "./firebase.js";
+import {
+  collection,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/11.8.0/firebase-firestore.js";
+
+// ===============================
+// CARREGAR DADOS DO FIRESTORE
+// ===============================
+
+async function getDadosFirebase() {
+  const produtosSnap = await getDocs(collection(db, "produtos"));
+  const entradasSnap = await getDocs(collection(db, "entradas"));
+  const saidasSnap = await getDocs(collection(db, "saidas"));
+
+  return {
+    produtos: produtosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+    entradas: entradasSnap.docs.map(doc => doc.data()),
+    saidas: saidasSnap.docs.map(doc => doc.data())
+  };
 }
+
+// ===============================
+// FUNÇÃO PARA CALCULAR NÍVEL
+// ===============================
 
 function calcularNivelEstoque(quantidade, maximo) {
   const percentual = (quantidade / maximo) * 100;
@@ -14,11 +36,15 @@ function calcularNivelEstoque(quantidade, maximo) {
   return { texto: "Alto", cor: "verde" };
 }
 
-function atualizarControleEstoque() {
+// ===============================
+// ATUALIZAR TABELA DE CONTROLE
+// ===============================
+
+async function atualizarControleEstoque() {
   const tbody = document.getElementById("listaControle");
   if (!tbody) return;
 
-  const dados = getDados();
+  const dados = await getDadosFirebase();
   const produtos = dados.produtos;
 
   if (produtos.length === 0) {
@@ -26,6 +52,7 @@ function atualizarControleEstoque() {
     return;
   }
 
+  // Saldo máximo encontrado (para calcular nível)
   const maxEstoque = Math.max(...produtos.map(p => p.quantidade || 0), 1);
 
   tbody.innerHTML = '';
@@ -33,11 +60,11 @@ function atualizarControleEstoque() {
   produtos.forEach(prod => {
     const entradas = dados.entradas
       .filter(e => e.produtoNome === prod.nome)
-      .reduce((acc, e) => acc + e.quantidade, 0);
+      .reduce((acc, e) => acc + (e.quantidade || 0), 0);
 
     const saidas = dados.saidas
       .filter(s => s.produtoNome === prod.nome)
-      .reduce((acc, s) => acc + s.quantidade, 0);
+      .reduce((acc, s) => acc + (s.quantidade || 0), 0);
 
     const saldo = (prod.quantidade || 0);
     const nivel = calcularNivelEstoque(saldo, maxEstoque);
@@ -49,12 +76,16 @@ function atualizarControleEstoque() {
       <td>${entradas}</td>
       <td>${saidas}</td>
       <td>${saldo}</td>
-      <td>
-        <span class="nivel ${nivel.cor}">${nivel.texto}</span>
-      </td>
+      <td><span class="nivel ${nivel.cor}">${nivel.texto}</span></td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-document.addEventListener("DOMContentLoaded", atualizarControleEstoque);
+// ===============================
+// INICIAR AO CARREGAR A PÁGINA
+// ===============================
+
+document.addEventListener("DOMContentLoaded", () => {
+  atualizarControleEstoque();
+});
