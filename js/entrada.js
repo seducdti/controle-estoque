@@ -212,3 +212,29 @@ cancelarBtn?.addEventListener('click', () => resetFormState());
 
 // hook do form
 if (formEntrada) formEntrada.addEventListener("submit", registrarEntrada);
+export async function carregarProdutosParaSelects() {
+  const selects = [document.getElementById("produtoEntrada")];
+  if (!selects[0]) return;
+
+  try {
+    const snap = await getDocs(collection(db, "produtos"));
+
+    selects.forEach(sel =>
+      sel.innerHTML = `<option value="">-- Selecione o Produto --</option>`
+    );
+
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      selects.forEach(sel => {
+        const opt = document.createElement("option");
+        opt.value = docSnap.id;
+        opt.textContent = d.nome;
+        sel.appendChild(opt);
+      });
+    });
+  } catch (err) {
+    console.error("Erro carregar produtos:", err);
+  }
+}
+
+
