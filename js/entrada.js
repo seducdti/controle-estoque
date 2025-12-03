@@ -1,7 +1,4 @@
 // js/entrada.js
-// Registra entradas no Firestore, edita e exclui (com opção de reverter estoque)
-// Requisitos: importar ./firebase.js que exporte `db`
-
 import { db } from "./firebase.js";
 import {
   collection,
@@ -16,7 +13,7 @@ import {
   getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// elementos
+// elementos (checagem segura)
 const formEntrada = document.getElementById("formEntrada");
 const produtoSelect = document.querySelector('select[data-produto-select="true"]#produtoEntrada') || document.getElementById("produtoEntrada");
 const quantidadeInput = document.getElementById("quantidadeEntrada");
@@ -29,7 +26,7 @@ const cancelarBtn = document.getElementById("cancelarEdicao");
 const entradasCol = collection(db, "entradas");
 const produtosColRef = collection(db, "produtos");
 
-// --- Carregar produtos (fallback) ---
+// --- Carregar produtos (fallback se popularSelectsGlobais não existir) ---
 export async function carregarProdutosParaSelects() {
   const selects = document.querySelectorAll('select[data-produto-select="true"]');
   if (!selects || selects.length === 0) return;
@@ -54,30 +51,29 @@ carregarProdutosParaSelects();
 
 // --- Helper form state ---
 function resetFormState() {
+  if (!formEntrada) return;
   formEntrada.removeAttribute("data-editing-docid");
-  formEntrada.querySelector('button[type="submit"]').textContent = 'Registrar Entrada';
-  cancelarBtn.style.display = 'none';
+  const btn = formEntrada.querySelector('button[type="submit"]');
+  if (btn) btn.textContent = 'Registrar Entrada';
+  if (cancelarBtn) cancelarBtn.style.display = 'none';
   formEntrada.reset();
 }
 
-// --- Render row helper (keeps columns consistent) ---
+// --- Render row helper ---
 function formatDisplayDate(iso) {
-  if (!iso) return ""; // vazio se não preenchido
-  try {
-    return new Date(iso).toLocaleString();
-  } catch { return ""; }
+  if (!iso) return "";
+  try { return new Date(iso).toLocaleString(); } catch { return ""; }
 }
 
 // --- Listener (real-time) para entradas ---
 function iniciarListenerEntradas() {
+  if (!tabelaEntradas) return;
   const q = query(entradasCol, orderBy("data", "desc"));
   onSnapshot(q, (snap) => {
-    if (!tabelaEntradas) return;
     tabelaEntradas.innerHTML = "";
     snap.forEach(docSnap => {
       const id = docSnap.id;
       const d = docSnap.data();
-      // build row: ID(produtoId) | produtoNome | qtd | data | origem | local | ações (editar/excluir)
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${d.produtoId ?? "-"}</td>
@@ -99,15 +95,12 @@ function iniciarListenerEntradas() {
       btn.onclick = async () => {
         const docId = btn.dataset.id;
         if (!confirm("Excluir este registro de entrada? Deseja também reverter a quantidade no estoque?")) return;
-        // perguntar se reverter
         const reverter = confirm("Reverter quantidade no estoque?");
         try {
           if (reverter) {
-            // obter doc antes de deletar
             const snap = await getDoc(doc(db, "entradas", docId));
             if (snap.exists()) {
               const ed = snap.data();
-              // ajustar produto
               const pRef = doc(db, "produtos", ed.produtoId);
               const pSnap = await getDoc(pRef);
               if (pSnap.exists()) {
@@ -133,19 +126,18 @@ function iniciarListenerEntradas() {
           const snap = await getDoc(doc(db, "entradas", docId));
           if (!snap.exists()) return alert("Registro não encontrado.");
           const d = snap.data();
-          // carregar no form
-          produtoSelect.value = d.produtoId || "";
-          quantidadeInput.value = d.quantidade || "";
-          // se data estiver vazia (null/""/undefined) mantemos vazio
-          dataInput.value = d.data ? new Date(d.data).toISOString().slice(0,10) : "";
-          origemInput.value = d.origem || "";
-          localInput.value = d.localMaterial || "";
-          // marcar estado de edição
-          formEntrada.setAttribute("data-editing-docid", docId);
-          formEntrada.querySelector('button[type="submit"]').textContent = 'Salvar Alterações';
-          cancelarBtn.style.display = 'inline';
-          // scroll to form
-          formEntrada.scrollIntoView({ behavior: "smooth" });
+          if (produtoSelect) produtoSelect.value = d.produtoId || "";
+          if (quantidadeInput) quantidadeInput.value = d.quantidade || "";
+          if (dataInput) dataInput.value = d.data ? new Date(d.data).toISOString().slice(0,10) : "";
+          if (origemInput) origemInput.value = d.origem || "";
+          if (localInput) localInput.value = d.localMaterial || "";
+          if (formEntrada) {
+            formEntrada.setAttribute("data-editing-docid", docId);
+            const btnSubmit = formEntrada.querySelector('button[type="submit"]');
+            if (btnSubmit) btnSubmit.textContent = 'Salvar Alterações';
+          }
+          if (cancelarBtn) cancelarBtn.style.display = 'inline';
+          formEntrada?.scrollIntoView({ behavior: "smooth" });
         } catch (err) {
           console.error("Erro ao carregar para edição:", err);
         }
@@ -155,7 +147,6 @@ function iniciarListenerEntradas() {
   }, err => console.error("Erro listener entradas:", err));
 }
 
-// chama listener se tabela existir
 if (tabelaEntradas) iniciarListenerEntradas();
 
 // --- Registrar / Editar entrada ---
@@ -163,15 +154,9 @@ async function registrarEntrada(e) {
   if (e) e.preventDefault();
   const produtoDocId = produtoSelect?.value;
   const qtd = Number(quantidadeInput?.value || 0);
-
-  // Se o usuário não informar a data, salvar string vazia
-  const dataVal = dataInput?.value
-      ? new Date(dataInput.value).toISOString()
-      : "";
-
+  const dataVal = dataInput?.value ? new Date(dataInput.value).toISOString() : "";
   const origem = origemInput?.value?.trim() || "";
   const localMaterial = localInput?.value?.trim() || "";
-
 
   if (!produtoDocId || !qtd || qtd <= 0) return alert("Selecione produto e informe quantidade válida.");
 
@@ -182,16 +167,14 @@ async function registrarEntrada(e) {
     const pData = pSnap.data();
     const atual = Number(pData.quantidade || 0);
 
-    const editDocId = formEntrada.getAttribute("data-editing-docid") || null;
+    const editDocId = formEntrada?.getAttribute("data-editing-docid") || null;
 
     if (editDocId) {
-      // edição: precisamos ajustar estoque pela diferença
       const entradaSnap = await getDoc(doc(db, "entradas", editDocId));
       if (!entradaSnap.exists()) return alert("Registro original não encontrado.");
       const old = entradaSnap.data();
       const oldQtd = Number(old.quantidade || 0);
       const diff = qtd - oldQtd; // se positivo, aumentar estoque; se negativo, reduzir
-      // atualizar entrada
       await updateDoc(doc(db, "entradas", editDocId), {
         produtoId: produtoDocId,
         produtoNome: pData.nome,
@@ -200,13 +183,10 @@ async function registrarEntrada(e) {
         origem,
         localMaterial
       });
-      // ajustar produto
       await updateDoc(pRef, { quantidade: Math.max(0, atual + diff) });
-
       alert("Entrada atualizada com sucesso!");
       resetFormState();
     } else {
-      // criar nova entrada
       await addDoc(entradasCol, {
         produtoId: produtoDocId,
         produtoNome: pData.nome,
@@ -215,14 +195,11 @@ async function registrarEntrada(e) {
         origem,
         localMaterial
       });
-      // aumenta estoque
       await updateDoc(pRef, { quantidade: atual + qtd });
-
       alert("Entrada registrada com sucesso!");
-      formEntrada.reset();
+      formEntrada?.reset();
     }
 
-    // atualizar selects (caso) e tabela — listeners farão isso
     try { carregarProdutosParaSelects(); } catch {}
   } catch (err) {
     console.error("Erro registrar/editar entrada:", err);
@@ -235,4 +212,3 @@ cancelarBtn?.addEventListener('click', () => resetFormState());
 
 // hook do form
 if (formEntrada) formEntrada.addEventListener("submit", registrarEntrada);
-
