@@ -5,93 +5,111 @@
 import { db } from "./firebase.js";
 import {
   collection,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/11.8.0/firebase-firestore.js";
+  onSnapshot,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ===============================
-// CARREGAR DADOS DO FIRESTORE
+// REFERÊNCIAS
 // ===============================
 
-async function getDadosFirebase() {
-  const produtosSnap = await getDocs(collection(db, "produtos"));
-  const entradasSnap = await getDocs(collection(db, "entradas"));
-  const saidasSnap = await getDocs(collection(db, "saidas"));
+const tabela = document.getElementById("listaControle");
 
-  return {
-    produtos: produtosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-    entradas: entradasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-    saidas: saidasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-  };
-}
+const produtosCol = collection(db, "produtos");
+const entradasCol = collection(db, "entradas");
+const saidasCol = collection(db, "saidas");
 
 // ===============================
-// FUNÇÃO PARA CLASSIFICAR NÍVEL
+// CALCULAR NÍVEL
 // ===============================
 
-function calcularNivelEstoque(quantidade, maximo) {
-  const percentual = (quantidade / maximo) * 100;
+function calcularNivelEstoque(qtd, max) {
+  const pct = (qtd / max) * 100;
 
-  if (percentual <= 25) return { texto: "Baixo", cor: "vermelho" };
-  if (percentual <= 75) return { texto: "Médio", cor: "amarelo" };
+  if (pct <= 25) return { texto: "Baixo", cor: "vermelho" };
+  if (pct <= 75) return { texto: "Médio", cor: "amarelo" };
   return { texto: "Alto", cor: "verde" };
 }
 
 // ===============================
-// ATUALIZAR TABELA DE CONTROLE
+// ATUALIZA TABELA EM TEMPO REAL
 // ===============================
 
-async function atualizarControleEstoque() {
-  const tbody = document.getElementById("listaControle");
-  if (!tbody) return;
+function iniciarControle() {
+  if (!tabela) return;
 
-  const dados = await getDadosFirebase();
-  const produtos = dados.produtos;
+  let listaProdutos = [];
+  let listaEntradas = [];
+  let listaSaidas = [];
 
-  if (produtos.length === 0) {
-    tbody.innerHTML = `<tr>
-      <td colspan="6" class="muted">Nenhum produto cadastrado</td>
-    </tr>`;
-    return;
-  }
-
-  tbody.innerHTML = "";
-
-  // maior quantidade entre todos os produtos -> usado para % do nível
-  const maxEstoque = Math.max(...produtos.map(p => p.quantidade || 0), 1);
-
-  produtos.forEach(prod => {
-
-    // Somar ENTRADAS pelo produtoId
-    const totalEntradas = dados.entradas
-      .filter(e => e.produtoId === prod.id)
-      .reduce((acc, e) => acc + (e.quantidade || 0), 0);
-
-    // Somar SAÍDAS pelo produtoId
-    const totalSaidas = dados.saidas
-      .filter(s => s.produtoId === prod.id)
-      .reduce((acc, s) => acc + (s.quantidade || 0), 0);
-
-    // Saldo atual cadastrado no produto
-    const saldo = prod.quantidade || 0;
-
-    const nivel = calcularNivelEstoque(saldo, maxEstoque);
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${prod.id}</td>
-      <td>${prod.nome}</td>
-      <td>${totalEntradas}</td>
-      <td>${totalSaidas}</td>
-      <td>${saldo}</td>
-      <td><span class="nivel ${nivel.cor}">${nivel.texto}</span></td>
-    `;
-
-    tbody.appendChild(tr);
+  // Carregar produtos
+  onSnapshot(query(produtosCol, orderBy("nome")), snap => {
+    listaProdutos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    atualizarTabela();
   });
+
+  // Carregar entradas
+  onSnapshot(entradasCol, snap => {
+    listaEntradas = snap.docs.map(doc => doc.data());
+    atualizarTabela();
+  });
+
+  // Carregar saídas
+  onSnapshot(saidasCol, snap => {
+    listaSaidas = snap.docs.map(doc => doc.data());
+    atualizarTabela();
+  });
+
+  // Função principal de atualização
+  function atualizarTabela() {
+    if (listaProdutos.length === 0) {
+      tabela.innerHTML = `
+        <tr>
+          <td colspan="6" class="muted">Nenhum produto cadastrado</td>
+        </tr>
+      `;
+      return;
+    }
+
+    tabela.innerHTML = "";
+
+    const maxEstoque = Math.max(
+      ...listaProdutos.map(p => Number(p.quantidade || 0)),
+      1
+    );
+
+    listaProdutos.forEach(prod => {
+      const entradas = listaEntradas
+        .filter(e => e.produtoId === prod.id)
+        .reduce((s, e) => s + Number(e.quantidade || 0), 0);
+
+      const saidas = listaSaidas
+        .filter(s => s.produtoId === prod.id)
+        .reduce((s, e) => s + Number(e.quantidade || 0), 0);
+
+      // saldo real = quantidade armazenada no produto
+      const saldo = Number(prod.quantidade || 0);
+
+      const nivel = calcularNivelEstoque(saldo, maxEstoque);
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${prod.id}</td>
+        <td>${prod.nome}</td>
+        <td>${entradas}</td>
+        <td>${saidas}</td>
+        <td>${saldo}</td>
+        <td><span class="nivel ${nivel.cor}">${nivel.texto}</span></td>
+      `;
+
+      tabela.appendChild(tr);
+    });
+  }
 }
 
 // ===============================
-// INICIAR AO CARREGAR A PÁGINA
+// CARREGAR AO INICIAR
 // ===============================
 
-document.addEventListener("DOMContentLoaded", atualizarControleEstoque);
+document.addEventListener("DOMContentLoaded", iniciarControle);
