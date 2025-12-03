@@ -6,7 +6,9 @@
   <title>Entradas de Produtos</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
+
   <header>
     <h1>Entradas de Produtos</h1>
     <nav>
@@ -22,8 +24,9 @@
   <main>
     <section class="form-section">
       <h2>Registrar Entrada</h2>
+
       <form id="formEntrada">
-        <select id="produtoEntrada" data-produto-select="true" required>
+        <select id="produtoEntrada" required>
           <option value="">-- Selecione o Produto --</option>
         </select>
 
@@ -36,7 +39,6 @@
         <input type="text" id="localMaterial" placeholder="Local do Material">
 
         <button type="submit">Registrar Entrada</button>
-        <button type="button" id="cancelarEdicao" style="display:none;">Cancelar</button>
       </form>
     </section>
 
@@ -64,28 +66,18 @@
       </div>
     </section>
   </main>
-    <script src="js/protecao.js"></script>
 
+  <!-- SCRIPTS -->
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/entrada.js"></script>
-  ...
-</main>
+  <script src="js/protecao.js"></script>
 
-<script src="js/app.js"></script>
-<script src="js/cadastro.js"></script>
-
-<!-- 🔐 Função de Logout -->
-<script>
-function logout() {
-    localStorage.removeItem("usuarioLogado");
-    window.location.href = "login.html";
-}
-</script>
+  <script>
+    function logout() {
+      localStorage.removeItem("usuarioLogado");
+      window.location.href = "login.html";
+    }
+  </script>
 
 </body>
 </html>
-
-</body>
-</html>
-
-
