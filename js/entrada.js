@@ -1,4 +1,7 @@
-// js/entrada.js
+// ===============================
+// entrada.js — Controle de Entradas (Firebase)
+// ===============================
+
 import { db } from "./firebase.js";
 import {
   collection,
@@ -13,9 +16,12 @@ import {
   getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// elementos (checagem segura)
+// ===============================
+// ELEMENTOS
+// ===============================
+
 const formEntrada = document.getElementById("formEntrada");
-const produtoSelect = document.querySelector('select[data-produto-select="true"]#produtoEntrada') || document.getElementById("produtoEntrada");
+const produtoSelect = document.querySelector("#produtoEntrada[data-produto-select='true']");
 const quantidadeInput = document.getElementById("quantidadeEntrada");
 const dataInput = document.getElementById("dataEntrada");
 const origemInput = document.getElementById("origemEntrada");
@@ -26,155 +32,232 @@ const cancelarBtn = document.getElementById("cancelarEdicao");
 const entradasCol = collection(db, "entradas");
 const produtosColRef = collection(db, "produtos");
 
-// --- Carregar produtos (fallback se popularSelectsGlobais não existir) ---
+// ===============================
+// CARREGAR PRODUTOS NO SELECT
+// ===============================
+
 export async function carregarProdutosParaSelects() {
-  const selects = document.querySelectorAll('select[data-produto-select="true"]');
-  if (!selects || selects.length === 0) return;
+  const selects = document.querySelectorAll("select[data-produto-select='true']");
+  if (!selects || selects.length === 0) {
+    console.warn("⚠ Nenhum select com data-produto-select encontrado.");
+    return;
+  }
+
   try {
     const snap = await getDocs(produtosColRef);
-    selects.forEach(sel => sel.innerHTML = `<option value="">-- Selecione o Produto --</option>`);
+
+    // limpar selects
+    selects.forEach(sel => {
+      sel.innerHTML = `<option value="">-- Selecione o Produto --</option>`;
+    });
+
+    // preencher com produtos
     snap.forEach(docSnap => {
       const d = docSnap.data();
+
       selects.forEach(sel => {
         const opt = document.createElement("option");
         opt.value = docSnap.id;
-        opt.textContent = `${d.nome} (ID:${d.id ?? "-"})`;
+        opt.textContent = `${d.nome}`;
         sel.appendChild(opt);
       });
     });
+
   } catch (err) {
-    console.error("Erro carregar produtos:", err);
+    console.error("Erro ao carregar produtos:", err);
   }
 }
-// chama agora (página carrega)
+
+// carregar imediatamente ao abrir a página
 carregarProdutosParaSelects();
 
-// --- Helper form state ---
+// ===============================
+// RESETAR FORMULÁRIO
+// ===============================
+
 function resetFormState() {
   if (!formEntrada) return;
+
   formEntrada.removeAttribute("data-editing-docid");
+
   const btn = formEntrada.querySelector('button[type="submit"]');
-  if (btn) btn.textContent = 'Registrar Entrada';
-  if (cancelarBtn) cancelarBtn.style.display = 'none';
+  if (btn) btn.textContent = "Registrar Entrada";
+
+  if (cancelarBtn) cancelarBtn.style.display = "none";
+
   formEntrada.reset();
 }
 
-// --- Render row helper ---
+// ===============================
+// FORMATAR DATA PARA EXIBIÇÃO
+// ===============================
+
 function formatDisplayDate(iso) {
   if (!iso) return "";
-  try { return new Date(iso).toLocaleString(); } catch { return ""; }
+  try {
+    return new Date(iso).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+  } catch {
+    return "";
+  }
 }
 
-// --- Listener (real-time) para entradas ---
+// ===============================
+// LISTENER TEMPO REAL — ENTRADAS
+// ===============================
+
 function iniciarListenerEntradas() {
   if (!tabelaEntradas) return;
+
   const q = query(entradasCol, orderBy("data", "desc"));
-  onSnapshot(q, (snap) => {
-    tabelaEntradas.innerHTML = "";
-    snap.forEach(docSnap => {
-      const id = docSnap.id;
-      const d = docSnap.data();
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${d.produtoId ?? "-"}</td>
-        <td>${d.produtoNome ?? "-"}</td>
-        <td>${d.quantidade ?? "-"}</td>
-        <td>${formatDisplayDate(d.data)}</td>
-        <td>${d.origem ?? ""}</td>
-        <td>${d.localMaterial ?? ""}</td>
-        <td>
-          <button class="btn-editar" data-id="${id}" title="Editar">✏️</button>
-          <button class="btn-excluir" data-id="${id}" title="Excluir">🗑️</button>
-        </td>
-      `;
-      tabelaEntradas.appendChild(tr);
-    });
 
-    // eventos delegados para editar/excluir
-    tabelaEntradas.querySelectorAll('.btn-excluir').forEach(btn => {
-      btn.onclick = async () => {
-        const docId = btn.dataset.id;
-        if (!confirm("Excluir este registro de entrada? Deseja também reverter a quantidade no estoque?")) return;
-        const reverter = confirm("Reverter quantidade no estoque?");
-        try {
-          if (reverter) {
-            const snap = await getDoc(doc(db, "entradas", docId));
-            if (snap.exists()) {
-              const ed = snap.data();
-              const pRef = doc(db, "produtos", ed.produtoId);
-              const pSnap = await getDoc(pRef);
-              if (pSnap.exists()) {
-                const atual = Number(pSnap.data().quantidade || 0);
-                const novo = atual - Number(ed.quantidade || 0);
-                await updateDoc(pRef, { quantidade: novo < 0 ? 0 : novo });
-              }
-            }
-          }
-          await deleteDoc(doc(db, "entradas", docId));
-          alert("Registro excluído.");
-        } catch (err) {
-          console.error("Erro excluir entrada:", err);
-          alert("Erro ao excluir (veja console).");
-        }
-      };
-    });
+  onSnapshot(
+    q,
+    (snap) => {
+      tabelaEntradas.innerHTML = "";
 
-    tabelaEntradas.querySelectorAll('.btn-editar').forEach(btn => {
-      btn.onclick = async () => {
-        const docId = btn.dataset.id;
-        try {
-          const snap = await getDoc(doc(db, "entradas", docId));
-          if (!snap.exists()) return alert("Registro não encontrado.");
+      snap.forEach((docSnap) => {
+        const id = docSnap.id;
+        const d = docSnap.data();
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${d.produtoId ?? "-"}</td>
+          <td>${d.produtoNome ?? "-"}</td>
+          <td>${d.quantidade ?? "-"}</td>
+          <td>${formatDisplayDate(d.data)}</td>
+          <td>${d.origem ?? ""}</td>
+          <td>${d.localMaterial ?? ""}</td>
+          <td>
+            <button class="btn-editar" data-id="${id}">✏️</button>
+            <button class="btn-excluir" data-id="${id}">🗑️</button>
+          </td>
+        `;
+
+        tabelaEntradas.appendChild(tr);
+      });
+
+      // vincular botões
+      configurarBotoes();
+    },
+    (err) => console.error("Erro listener entradas:", err)
+  );
+}
+
+function configurarBotoes() {
+  // excluir
+  document.querySelectorAll(".btn-excluir").forEach((btn) => {
+    btn.onclick = async () => {
+      const docId = btn.dataset.id;
+      if (!confirm("Excluir esta entrada?")) return;
+
+      try {
+        const snap = await getDoc(doc(db, "entradas", docId));
+        if (snap.exists()) {
           const d = snap.data();
-          if (produtoSelect) produtoSelect.value = d.produtoId || "";
-          if (quantidadeInput) quantidadeInput.value = d.quantidade || "";
-          if (dataInput) dataInput.value = d.data ? new Date(d.data).toISOString().slice(0,10) : "";
-          if (origemInput) origemInput.value = d.origem || "";
-          if (localInput) localInput.value = d.localMaterial || "";
-          if (formEntrada) {
-            formEntrada.setAttribute("data-editing-docid", docId);
-            const btnSubmit = formEntrada.querySelector('button[type="submit"]');
-            if (btnSubmit) btnSubmit.textContent = 'Salvar Alterações';
-          }
-          if (cancelarBtn) cancelarBtn.style.display = 'inline';
-          formEntrada?.scrollIntoView({ behavior: "smooth" });
-        } catch (err) {
-          console.error("Erro ao carregar para edição:", err);
-        }
-      };
-    });
 
-  }, err => console.error("Erro listener entradas:", err));
+          // reverter estoque
+          const pRef = doc(db, "produtos", d.produtoId);
+          const pSnap = await getDoc(pRef);
+
+          if (pSnap.exists()) {
+            const atual = Number(pSnap.data().quantidade || 0);
+            const novo = Math.max(0, atual - Number(d.quantidade || 0));
+            await updateDoc(pRef, { quantidade: novo });
+          }
+        }
+
+        await deleteDoc(doc(db, "entradas", docId));
+        alert("Entrada excluída.");
+
+      } catch (err) {
+        console.error("Erro excluir:", err);
+      }
+    };
+  });
+
+  // editar
+  document.querySelectorAll(".btn-editar").forEach((btn) => {
+    btn.onclick = async () => {
+      const docId = btn.dataset.id;
+
+      try {
+        const snap = await getDoc(doc(db, "entradas", docId));
+        if (!snap.exists()) return alert("Registro não existe.");
+
+        const d = snap.data();
+
+        produtoSelect.value = d.produtoId || "";
+        quantidadeInput.value = d.quantidade || "";
+
+        dataInput.value = d.data
+          ? new Date(d.data).toISOString().slice(0, 10)
+          : "";
+
+        origemInput.value = d.origem || "";
+        localInput.value = d.localMaterial || "";
+
+        formEntrada.setAttribute("data-editing-docid", docId);
+        formEntrada.querySelector('button[type="submit"]').textContent =
+          "Salvar Alterações";
+        cancelarBtn.style.display = "inline";
+
+        formEntrada.scrollIntoView({ behavior: "smooth" });
+
+      } catch (err) {
+        console.error("Erro ao editar:", err);
+      }
+    };
+  });
 }
 
 if (tabelaEntradas) iniciarListenerEntradas();
 
-// --- Registrar / Editar entrada ---
+// ===============================
+// REGISTRAR OU EDITAR ENTRADA
+// ===============================
+
 async function registrarEntrada(e) {
   if (e) e.preventDefault();
+
   const produtoDocId = produtoSelect?.value;
   const qtd = Number(quantidadeInput?.value || 0);
-  const dataVal = dataInput?.value ? new Date(dataInput.value).toISOString() : "";
+
+  const dataVal =
+    dataInput?.value ? new Date(dataInput.value).toISOString() : "";
+
   const origem = origemInput?.value?.trim() || "";
   const localMaterial = localInput?.value?.trim() || "";
 
-  if (!produtoDocId || !qtd || qtd <= 0) return alert("Selecione produto e informe quantidade válida.");
+  if (!produtoDocId || !qtd || qtd <= 0)
+    return alert("Selecione um produto e informe a quantidade.");
 
   try {
     const pRef = doc(db, "produtos", produtoDocId);
     const pSnap = await getDoc(pRef);
+
     if (!pSnap.exists()) return alert("Produto não encontrado.");
+
     const pData = pSnap.data();
     const atual = Number(pData.quantidade || 0);
 
-    const editDocId = formEntrada?.getAttribute("data-editing-docid") || null;
+    const editDocId = formEntrada.getAttribute("data-editing-docid");
 
     if (editDocId) {
+      // ========================
+      // MODO DE EDIÇÃO
+      // ========================
+
       const entradaSnap = await getDoc(doc(db, "entradas", editDocId));
-      if (!entradaSnap.exists()) return alert("Registro original não encontrado.");
+      if (!entradaSnap.exists()) return alert("Entrada não existe.");
+
       const old = entradaSnap.data();
       const oldQtd = Number(old.quantidade || 0);
-      const diff = qtd - oldQtd; // se positivo, aumentar estoque; se negativo, reduzir
+      const diff = qtd - oldQtd; // diferença que impacta o estoque
+
       await updateDoc(doc(db, "entradas", editDocId), {
         produtoId: produtoDocId,
         produtoNome: pData.nome,
@@ -183,10 +266,16 @@ async function registrarEntrada(e) {
         origem,
         localMaterial
       });
+
       await updateDoc(pRef, { quantidade: Math.max(0, atual + diff) });
-      alert("Entrada atualizada com sucesso!");
+
+      alert("Entrada atualizada!");
       resetFormState();
     } else {
+      // ========================
+      // NOVA ENTRADA
+      // ========================
+
       await addDoc(entradasCol, {
         produtoId: produtoDocId,
         produtoNome: pData.nome,
@@ -195,46 +284,29 @@ async function registrarEntrada(e) {
         origem,
         localMaterial
       });
+
       await updateDoc(pRef, { quantidade: atual + qtd });
-      alert("Entrada registrada com sucesso!");
-      formEntrada?.reset();
+
+      alert("Entrada registrada!");
+      formEntrada.reset();
     }
 
-    try { carregarProdutosParaSelects(); } catch {}
+    carregarProdutosParaSelects();
+
   } catch (err) {
-    console.error("Erro registrar/editar entrada:", err);
-    alert("Erro ao processar entrada (veja console).");
+    console.error("Erro registrar entrada:", err);
+    alert("Erro ao registrar entrada.");
   }
 }
 
-// cancelar edição
-cancelarBtn?.addEventListener('click', () => resetFormState());
+// ===============================
+// CANCELAR EDIÇÃO
+// ===============================
 
-// hook do form
-if (formEntrada) formEntrada.addEventListener("submit", registrarEntrada);
-export async function carregarProdutosParaSelects() {
-  const selects = [document.getElementById("produtoEntrada")];
-  if (!selects[0]) return;
+cancelarBtn?.addEventListener("click", resetFormState);
 
-  try {
-    const snap = await getDocs(collection(db, "produtos"));
+// ===============================
+// SUBMIT DO FORM
+// ===============================
 
-    selects.forEach(sel =>
-      sel.innerHTML = `<option value="">-- Selecione o Produto --</option>`
-    );
-
-    snap.forEach(docSnap => {
-      const d = docSnap.data();
-      selects.forEach(sel => {
-        const opt = document.createElement("option");
-        opt.value = docSnap.id;
-        opt.textContent = d.nome;
-        sel.appendChild(opt);
-      });
-    });
-  } catch (err) {
-    console.error("Erro carregar produtos:", err);
-  }
-}
-
-
+formEntrada?.addEventListener("submit", registrarEntrada);
