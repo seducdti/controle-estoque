@@ -1,7 +1,4 @@
 // js/saida.js
-// Registra saídas no Firestore, edita e exclui (com opção de reverter estoque)
-// Requisitos: importar ./firebase.js que exporte `db`
-
 import { db } from "./firebase.js";
 import {
   collection,
@@ -57,9 +54,9 @@ function formatDisplayDate(iso) {
 
 // listener saídas
 function iniciarListenerSaidas() {
+  if (!tabelaSaidas) return;
   const q = query(saidasCol, orderBy("data", "desc"));
   onSnapshot(q, (snap) => {
-    if (!tabelaSaidas) return;
     tabelaSaidas.innerHTML = "";
     snap.forEach(docSnap => {
       const id = docSnap.id;
@@ -113,14 +110,17 @@ function iniciarListenerSaidas() {
           const snap = await getDoc(doc(db, "saidas", docId));
           if (!snap.exists()) return alert("Registro não encontrado.");
           const d = snap.data();
-          produtoSelectSaida.value = d.produtoId || "";
-          quantidadeSaidaInput.value = d.quantidade || "";
-          dataSaidaInput.value = d.data ? new Date(d.data).toISOString().slice(0,10) : "";
-          destinoInput.value = d.destino || "";
-          formSaida.setAttribute("data-editing-docid", docId);
-          document.querySelector('#formSaida button[type="submit"]').textContent = 'Salvar Alterações';
-          cancelarEdicaoSaida.style.display = 'inline';
-          formSaida.scrollIntoView({ behavior: "smooth" });
+          if (produtoSelectSaida) produtoSelectSaida.value = d.produtoId || "";
+          if (quantidadeSaidaInput) quantidadeSaidaInput.value = d.quantidade || "";
+          if (dataSaidaInput) dataSaidaInput.value = d.data ? new Date(d.data).toISOString().slice(0,10) : "";
+          if (destinoInput) destinoInput.value = d.destino || "";
+          if (formSaida) {
+            formSaida.setAttribute("data-editing-docid", docId);
+            const btnSubmit = document.querySelector('#formSaida button[type="submit"]');
+            if (btnSubmit) btnSubmit.textContent = 'Salvar Alterações';
+          }
+          if (cancelarEdicaoSaida) cancelarEdicaoSaida.style.display = 'inline';
+          formSaida?.scrollIntoView({ behavior: "smooth" });
         } catch (err) { console.error(err); }
       };
     });
@@ -145,16 +145,14 @@ async function registrarSaida(e) {
     if (!pSnap.exists()) return alert("Produto não encontrado.");
     const atual = Number(pSnap.data().quantidade || 0);
 
-    const editDocId = formSaida.getAttribute("data-editing-docid") || null;
+    const editDocId = formSaida?.getAttribute("data-editing-docid") || null;
 
     if (editDocId) {
-      // edição: ajustar estoque pela diferença
       const oldSnap = await getDoc(doc(db, "saidas", editDocId));
       if (!oldSnap.exists()) return alert("Registro original não encontrado.");
       const old = oldSnap.data();
       const oldQtd = Number(old.quantidade || 0);
-      const diff = qtd - oldQtd; // positive -> reduce more (because it's a saída), negative -> increase stock
-      // update saída
+      const diff = qtd - oldQtd;
       await updateDoc(doc(db, "saidas", editDocId), {
         produtoId: produtoDocId,
         produtoNome: pSnap.data().nome,
@@ -162,16 +160,14 @@ async function registrarSaida(e) {
         data: dataVal,
         destino
       });
-      // ajustar produto: since it's a saída, atual - diff
       const novo = atual - diff;
       await updateDoc(pRef, { quantidade: Math.max(0, novo) });
-
       alert("Saída atualizada com sucesso!");
       formSaida.removeAttribute("data-editing-docid");
-      document.querySelector('#formSaida button[type="submit"]').textContent = 'Registrar Saída';
-      cancelarEdicaoSaida.style.display = 'none';
+      const btnSubmit = document.querySelector('#formSaida button[type="submit"]');
+      if (btnSubmit) btnSubmit.textContent = 'Registrar Saída';
+      if (cancelarEdicaoSaida) cancelarEdicaoSaida.style.display = 'none';
     } else {
-      // nova saída
       if (qtd > atual) return alert("Estoque insuficiente.");
       await addDoc(saidasCol, {
         produtoId: produtoDocId,
@@ -182,7 +178,7 @@ async function registrarSaida(e) {
       });
       await updateDoc(pRef, { quantidade: atual - qtd });
       alert("Saída registrada com sucesso!");
-      formSaida.reset();
+      formSaida?.reset();
     }
     try { carregarProdutosParaSelectsSaida(); } catch {}
   } catch (err) {
@@ -193,9 +189,12 @@ async function registrarSaida(e) {
 
 // cancelar edição
 cancelarEdicaoSaida?.addEventListener('click', () => {
+  if (!formSaida) return;
   formSaida.removeAttribute("data-editing-docid");
-  document.querySelector('#formSaida button[type="submit"]').textContent = 'Registrar Saída';
-  cancelarEdicaoSaida.style.display = 'none';
+  const btnSubmit = document.querySelector('#formSaida button[type="submit"]');
+  if (btnSubmit) btnSubmit.textContent = 'Registrar Saída';
+  if (cancelarEdicaoSaida) cancel
+  arEdicaoSaida.style.display = 'none';
   formSaida.reset();
 });
 
