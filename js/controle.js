@@ -19,8 +19,8 @@ async function getDadosFirebase() {
 
   return {
     produtos: produtosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-    entradas: entradasSnap.docs.map(doc => doc.data()),
-    saidas: saidasSnap.docs.map(doc => doc.data())
+    entradas: entradasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+    saidas: saidasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
   };
 }
 
@@ -52,24 +52,38 @@ async function atualizarControleEstoque() {
     return;
   }
 
-  // Saldo máximo encontrado (para calcular nível)
-  const maxEstoque = Math.max(...produtos.map(p => p.quantidade || 0), 1);
+  tbody.innerHTML = "";
 
-  tbody.innerHTML = '';
-
-  produtos.forEach(prod => {
+  // Calcular saldos de todos antes para encontrar o máximo
+  const saldoProdutos = produtos.map(prod => {
     const entradas = dados.entradas
-      .filter(e => e.produtoNome === prod.nome)
-      .reduce((acc, e) => acc + (e.quantidade || 0), 0);
+      .filter(e => e.produtoId === prod.id)
+      .reduce((acc, e) => acc + (Number(e.quantidade) || 0), 0);
 
     const saidas = dados.saidas
-      .filter(s => s.produtoNome === prod.nome)
-      .reduce((acc, s) => acc + (s.quantidade || 0), 0);
+      .filter(s => s.produtoId === prod.id)
+      .reduce((acc, s) => acc + (Number(s.quantidade) || 0), 0);
 
-    const saldo = (prod.quantidade || 0);
+    return entradas - saidas;
+  });
+
+  const maxEstoque = Math.max(...saldoProdutos, 1);
+
+  // Preenche linha a linha
+  produtos.forEach((prod, index) => {
+    const entradas = dados.entradas
+      .filter(e => e.produtoId === prod.id)
+      .reduce((acc, e) => acc + (Number(e.quantidade) || 0), 0);
+
+    const saidas = dados.saidas
+      .filter(s => s.produtoId === prod.id)
+      .reduce((acc, s) => acc + (Number(s.quantidade) || 0), 0);
+
+    const saldo = entradas - saidas;
+
     const nivel = calcularNivelEstoque(saldo, maxEstoque);
 
-    const tr = document.createElement('tr');
+    const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${prod.id}</td>
       <td>${prod.nome}</td>
@@ -78,14 +92,13 @@ async function atualizarControleEstoque() {
       <td>${saldo}</td>
       <td><span class="nivel ${nivel.cor}">${nivel.texto}</span></td>
     `;
+
     tbody.appendChild(tr);
   });
 }
 
 // ===============================
-// INICIAR AO CARREGAR A PÁGINA
+// INICIAR
 // ===============================
 
-document.addEventListener("DOMContentLoaded", () => {
-  atualizarControleEstoque();
-});
+document.addEventListener("DOMContentLoaded", atualizarControleEstoque);
