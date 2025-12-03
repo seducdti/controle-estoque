@@ -1,6 +1,4 @@
 // js/produtos.js
-// Lista / cria / remove produtos (Firestore, real-time)
-
 import { db } from "./firebase.js";
 import {
   collection,
@@ -11,7 +9,8 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  getDoc
+  getDoc,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const produtosCol = collection(db, "produtos");
@@ -80,7 +79,8 @@ async function salvarProdutoFirestore(e) {
       const ref = doc(db, "produtos", editandoDocId);
       await updateDoc(ref, { nome });
       form.removeAttribute("data-editando-docid");
-      document.querySelector('#formProduto button[type="submit"]').textContent = 'Cadastrar';
+      const btn = document.querySelector('#formProduto button[type="submit"]');
+      if (btn) btn.textContent = 'Cadastrar';
       alert("Produto atualizado!");
     } else {
       const novoId = gerarIDSequencial();
@@ -101,8 +101,8 @@ async function editarProdutoFirestore(docId) {
     if (!p) return alert("Produto não encontrado.");
     nomeInput.value = p.nome;
     formProduto.setAttribute("data-editando-docid", docId);
-    document.querySelector('#formProduto button[type="submit"]').textContent = 'Salvar Alterações';
-    // scrol para o form
+    const btn = document.querySelector('#formProduto button[type="submit"]');
+    if (btn) btn.textContent = 'Salvar Alterações';
     formProduto.scrollIntoView({ behavior: "smooth" });
   } catch (err) {
     console.error(err);
@@ -122,8 +122,7 @@ async function excluirProdutoFirestore(docId) {
 }
 
 // Popula selects usados por entrada/saída (global)
-function popularSelectsGlobais() {
-  // selecionar todos os selects com data-produto-select="true"
+async function popularSelectsGlobais() {
   const selects = document.querySelectorAll('select[data-produto-select="true"]');
   selects.forEach(sel => {
     sel.innerHTML = '<option value="">-- Selecione o Produto --</option>';
