@@ -35,15 +35,25 @@ function iniciarControle() {
     atualizarTabela();
   });
 
-  onSnapshot(entradasCol, snap => {
-    listaEntradas = snap.docs.map(doc => doc.data());
-    atualizarTabela();
-  });
+ // Carregar entradas
+onSnapshot(entradasCol, snap => {
+  listaEntradas = snap.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+    quantidade: Number(doc.data().quantidade || doc.data().qtd || 0)
+  }));
+  atualizarTabela();
+});
 
-  onSnapshot(saidasCol, snap => {
-    listaSaidas = snap.docs.map(doc => doc.data());
-    atualizarTabela();
-  });
+// Carregar saídas
+onSnapshot(saidasCol, snap => {
+  listaSaidas = snap.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+    quantidade: Number(doc.data().quantidade || doc.data().qtd || 0)
+  }));
+  atualizarTabela();
+});
 
   function atualizarTabela() {
     if (listaProdutos.length === 0) {
@@ -91,3 +101,4 @@ function iniciarControle() {
 }
 
 document.addEventListener("DOMContentLoaded", iniciarControle);
+
