@@ -1,84 +1,65 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Estoque</title>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background: #f4f4f4;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: center;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background: #333;
-            color: white;
-        }
-
-        tr:hover {
-            background: #f1f1f1;
-        }
-
-        .nivel-baixo {
-            color: red;
-            font-weight: bold;
-        }
-
-        .nivel-medio {
-            color: orange;
-            font-weight: bold;
-        }
-
-        .nivel-alto {
-            color: green;
-            font-weight: bold;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Estoque</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
 
+  <header>
     <h1>Controle de Estoque</h1>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="entrada.html">Entradas</a>
+      <a href="saida.html">Saídas</a>
+      <a href="controle.html" class="active">Controle</a>
+      <button onclick="logout()" class="btn-sair">Sair</button>
+    </nav>
+  </header>
 
-    <table id="tabelaControle">
-        <thead>
+  <main>
+    <section class="table-section">
+      <h2>Resumo de Estoque</h2>
+
+      <div class="table-container">
+        <table class="tabela-estoque">
+          <thead>
             <tr>
-                <th>Produto</th>
-                <th>Total Entradas</th>
-                <th>Total Saídas</th>
-                <th>Saldo</th>
-                <th>Nível</th>
+              <th>ID</th>
+              <th>Produto</th>
+              <th>Entradas</th>
+              <th>Saídas</th>
+              <th>Saldo Atual</th>
+              <th>Nível</th>
             </tr>
-        </thead>
-        <tbody id="tabelaControleBody"></tbody>
-    </table>
+          </thead>
+          <tbody id="listaControle">
+            <!-- Preenchido pelo controle.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
 
-    <!-- Firebase sempre primeiro -->
-    <script type="module" src="firebase.js"></script>
+  <script src="js/protecao.js"></script>
 
-    <!-- Controle deve ser carregado depois -->
-    <script type="module" src="controle.js"></script>
+  <!-- Firebase SEMPRE primeiro -->
+  <script type="module" src="js/firebase.js"></script>
+
+  <!-- Controle depois -->
+  <script type="module" src="js/controle.js"></script>
+
+  <!-- Logout -->
+  <script>
+    function logout() {
+      localStorage.removeItem("usuarioLogado");
+      window.location.href = "login.html";
+    }
+  </script>
 
 </body>
 </html>
