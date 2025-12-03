@@ -10,31 +10,18 @@ import {
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// ===============================
-// REFERÊNCIAS
-// ===============================
-
 const tabela = document.getElementById("listaControle");
 
 const produtosCol = collection(db, "produtos");
 const entradasCol = collection(db, "entradas");
 const saidasCol = collection(db, "saidas");
 
-// ===============================
-// CALCULAR NÍVEL
-// ===============================
-
 function calcularNivelEstoque(qtd, max) {
   const pct = (qtd / max) * 100;
-
   if (pct <= 25) return { texto: "Baixo", cor: "vermelho" };
   if (pct <= 75) return { texto: "Médio", cor: "amarelo" };
   return { texto: "Alto", cor: "verde" };
 }
-
-// ===============================
-// ATUALIZA TABELA EM TEMPO REAL
-// ===============================
 
 function iniciarControle() {
   if (!tabela) return;
@@ -43,25 +30,21 @@ function iniciarControle() {
   let listaEntradas = [];
   let listaSaidas = [];
 
-  // Carregar produtos
   onSnapshot(query(produtosCol, orderBy("nome")), snap => {
     listaProdutos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     atualizarTabela();
   });
 
-  // Carregar entradas
   onSnapshot(entradasCol, snap => {
     listaEntradas = snap.docs.map(doc => doc.data());
     atualizarTabela();
   });
 
-  // Carregar saídas
   onSnapshot(saidasCol, snap => {
     listaSaidas = snap.docs.map(doc => doc.data());
     atualizarTabela();
   });
 
-  // Função principal de atualização
   function atualizarTabela() {
     if (listaProdutos.length === 0) {
       tabela.innerHTML = `
@@ -81,14 +64,13 @@ function iniciarControle() {
 
     listaProdutos.forEach(prod => {
       const entradas = listaEntradas
-        .filter(e => e.produtoId === prod.id)
+        .filter(e => (e.produtoId + "") === (prod.id + ""))   // FIX
         .reduce((s, e) => s + Number(e.quantidade || 0), 0);
 
       const saidas = listaSaidas
-        .filter(s => s.produtoId === prod.id)
+        .filter(s => (s.produtoId + "") === (prod.id + ""))    // FIX
         .reduce((s, e) => s + Number(e.quantidade || 0), 0);
 
-      // saldo real = quantidade armazenada no produto
       const saldo = Number(prod.quantidade || 0);
 
       const nivel = calcularNivelEstoque(saldo, maxEstoque);
@@ -107,9 +89,5 @@ function iniciarControle() {
     });
   }
 }
-
-// ===============================
-// CARREGAR AO INICIAR
-// ===============================
 
 document.addEventListener("DOMContentLoaded", iniciarControle);
