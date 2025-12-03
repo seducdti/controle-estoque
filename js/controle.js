@@ -30,30 +30,35 @@ function iniciarControle() {
   let listaEntradas = [];
   let listaSaidas = [];
 
+  // Carregar produtos
   onSnapshot(query(produtosCol, orderBy("nome")), snap => {
-    listaProdutos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    listaProdutos = snap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      quantidade: Number(doc.data().quantidade || 0) // Garantindo número
+    }));
     atualizarTabela();
   });
 
- // Carregar entradas
-onSnapshot(entradasCol, snap => {
-  listaEntradas = snap.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-    quantidade: Number(doc.data().quantidade || doc.data().qtd || 0)
-  }));
-  atualizarTabela();
-});
+  // Carregar entradas
+  onSnapshot(entradasCol, snap => {
+    listaEntradas = snap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      quantidade: Number(doc.data().quantidade || 0)
+    }));
+    atualizarTabela();
+  });
 
-// Carregar saídas
-onSnapshot(saidasCol, snap => {
-  listaSaidas = snap.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-    quantidade: Number(doc.data().quantidade || doc.data().qtd || 0)
-  }));
-  atualizarTabela();
-});
+  // Carregar saídas
+  onSnapshot(saidasCol, snap => {
+    listaSaidas = snap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      quantidade: Number(doc.data().quantidade || 0)
+    }));
+    atualizarTabela();
+  });
 
   function atualizarTabela() {
     if (listaProdutos.length === 0) {
@@ -73,15 +78,18 @@ onSnapshot(saidasCol, snap => {
     );
 
     listaProdutos.forEach(prod => {
+      // Somar ENTRADAS do produto
       const entradas = listaEntradas
-        .filter(e => (e.produtoId + "") === (prod.id + ""))   // FIX
-        .reduce((s, e) => s + Number(e.quantidade || 0), 0);
+        .filter(e => e.produtoId === prod.id)
+        .reduce((total, e) => total + Number(e.quantidade || 0), 0);
 
+      // Somar SAÍDAS do produto
       const saidas = listaSaidas
-        .filter(s => (s.produtoId + "") === (prod.id + ""))    // FIX
-        .reduce((s, e) => s + Number(e.quantidade || 0), 0);
+        .filter(s => s.produtoId === prod.id)
+        .reduce((total, s) => total + Number(s.quantidade || 0), 0);
 
-      const saldo = Number(prod.quantidade || 0);
+      // CALCULAR SALDO REAL
+      const saldo = prod.quantidade + entradas - saidas;
 
       const nivel = calcularNivelEstoque(saldo, maxEstoque);
 
@@ -101,4 +109,3 @@ onSnapshot(saidasCol, snap => {
 }
 
 document.addEventListener("DOMContentLoaded", iniciarControle);
-
