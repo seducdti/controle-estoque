@@ -106,7 +106,7 @@ function formatDisplayDate(iso) {
 }
 
 // ===============================
-// LISTENER TEMPO REAL — ENTRADAS
+// LISTENER EM TEMPO REAL — ENTRADAS
 // ===============================
 
 function iniciarListenerEntradas() {
@@ -125,7 +125,7 @@ function iniciarListenerEntradas() {
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${d.produtoId ?? "-"}</td>
+          <td>${id}</td>
           <td>${d.produtoNome ?? "-"}</td>
           <td>${d.quantidade ?? "-"}</td>
           <td>${formatDisplayDate(d.data)}</td>
@@ -140,7 +140,6 @@ function iniciarListenerEntradas() {
         tabelaEntradas.appendChild(tr);
       });
 
-      // vincular botões
       configurarBotoes();
     },
     (err) => console.error("Erro listener entradas:", err)
@@ -247,16 +246,13 @@ async function registrarEntrada(e) {
     const editDocId = formEntrada.getAttribute("data-editing-docid");
 
     if (editDocId) {
-      // ========================
-      // MODO DE EDIÇÃO
-      // ========================
-
+      // edição
       const entradaSnap = await getDoc(doc(db, "entradas", editDocId));
       if (!entradaSnap.exists()) return alert("Entrada não existe.");
 
       const old = entradaSnap.data();
       const oldQtd = Number(old.quantidade || 0);
-      const diff = qtd - oldQtd; // diferença que impacta o estoque
+      const diff = qtd - oldQtd;
 
       await updateDoc(doc(db, "entradas", editDocId), {
         produtoId: produtoDocId,
@@ -272,10 +268,7 @@ async function registrarEntrada(e) {
       alert("Entrada atualizada!");
       resetFormState();
     } else {
-      // ========================
-      // NOVA ENTRADA
-      // ========================
-
+      // nova entrada
       await addDoc(entradasCol, {
         produtoId: produtoDocId,
         produtoNome: pData.nome,
