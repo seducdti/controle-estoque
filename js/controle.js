@@ -1,124 +1,170 @@
 // ===============================
-// controle.js — Resumo visual do estoque (Firebase)
+// produtos.js — Cadastro e Lista de Produtos (Firebase)
 // ===============================
 
 import { db } from "./firebase.js";
 import {
   collection,
+  addDoc,
+  deleteDoc,
+  updateDoc,
+  doc,
   onSnapshot,
   query,
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const tabela = document.getElementById("listaControle");
+const tabela = document.getElementById("listaProdutos");
+const form = document.getElementById("formProduto");
+const inputNome = document.getElementById("nomeProduto");
+const inputQuantidade = document.getElementById("quantidadeProduto");
+const btnSalvar = document.getElementById("btnSalvar");
+const inputPesquisa = document.getElementById("pesquisaProduto");
 
+let editandoId = null;
+let listaProdutos = [];
+let termoPesquisa = "";
+
+// Referência Firebase
 const produtosCol = collection(db, "produtos");
-const entradasCol = collection(db, "entradas");
-const saidasCol = collection(db, "saidas");
 
-// Função para calcular nível de estoque
-function calcularNivelEstoque(qtd, max) {
-  const pct = (qtd / max) * 100;
-  if (pct <= 25) return { texto: "Baixo", cor: "vermelho" };
-  if (pct <= 75) return { texto: "Médio", cor: "amarelo" };
-  return { texto: "Alto", cor: "verde" };
+// ----------------------
+// Listener para Pesquisa
+// ----------------------
+if (inputPesquisa) {
+  inputPesquisa.addEventListener("input", () => {
+    termoPesquisa = inputPesquisa.value.toLowerCase();
+    montarTabela();
+  });
 }
 
-function iniciarControle() {
+// ----------------------
+// Carregar produtos em tempo real
+// ----------------------
+onSnapshot(query(produtosCol, orderBy("nome")), snap => {
+  listaProdutos = snap.docs.map(doc => ({
+    id: doc.id,
+    nome: doc.data().nome,
+    quantidade: Number(doc.data().quantidade || 0)
+  }));
+  montarTabela();
+});
 
+// ----------------------
+// Monta tabela visual
+// ----------------------
+function montarTabela() {
   if (!tabela) return;
 
-  let listaProdutos = [];
-  let listaEntradas = [];
-  let listaSaidas = [];
+  tabela.innerHTML = "";
 
-  // ----------------------
-  // Carregar PRODUTOS
-  // ----------------------
-  onSnapshot(query(produtosCol, orderBy("nome")), snap => {
-    listaProdutos = snap.docs.map(doc => ({
-      id: doc.id,
-      nome: doc.data().nome,
-      quantidade: Number(doc.data().quantidade || 0) // SALDO REAL
-    }));
-    atualizarTabela();
-  });
+  // Aplica filtro da pesquisa
+  const filtrados = listaProdutos.filter(p =>
+    p.nome.toLowerCase().includes(termoPesquisa)
+  );
 
-  // ----------------------
-  // Carregar ENTRADAS
-  // ----------------------
-  onSnapshot(entradasCol, snap => {
-    listaEntradas = snap.docs.map(doc => ({
-      id: doc.id,
-      produtoId: doc.data().produtoId,
-      quantidade: Number(doc.data().quantidade || 0)
-    }));
-    atualizarTabela();
-  });
-
-  // ----------------------
-  // Carregar SAÍDAS
-  // ----------------------
-  onSnapshot(saidasCol, snap => {
-    listaSaidas = snap.docs.map(doc => ({
-      id: doc.id,
-      produtoId: doc.data().produtoId,
-      quantidade: Number(doc.data().quantidade || 0)
-    }));
-    atualizarTabela();
-  });
-
-  // ----------------------
-  // Montar Tabela Final
-  // ----------------------
-  function atualizarTabela() {
-
-    if (listaProdutos.length === 0) {
-      tabela.innerHTML = `
-        <tr>
-          <td colspan="6" class="muted">Nenhum produto cadastrado</td>
-        </tr>
-      `;
-      return;
-    }
-
-    tabela.innerHTML = "";
-
-    const maxEstoque = Math.max(
-      ...listaProdutos.map(p => p.quantidade),
-      1
-    );
-
-    listaProdutos.forEach(prod => {
-
-      // Total de ENTRADAS (histórico)
-      const entradas = listaEntradas
-        .filter(e => e.produtoId === prod.id)
-        .reduce((total, e) => total + e.quantidade, 0);
-
-      // Total de SAÍDAS (histórico)
-      const saidas = listaSaidas
-        .filter(s => s.produtoId === prod.id)
-        .reduce((total, s) => total + s.quantidade, 0);
-
-      // SALDO REAL — já atualizado na coleção produtos
-      const saldo = prod.quantidade;
-
-      const nivel = calcularNivelEstoque(saldo, maxEstoque);
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${prod.id}</td>
-        <td>${prod.nome}</td>
-        <td>${entradas}</td>
-        <td>${saidas}</td>
-        <td>${saldo}</td>
-        <td><span class="nivel ${nivel.cor}">${nivel.texto}</span></td>
-      `;
-
-      tabela.appendChild(tr);
-    });
+  if (filtrados.length === 0) {
+    tabela.innerHTML = `
+      <tr>
+        <td colspan="4" class="muted">Nenhum produto encontrado</td>
+      </tr>
+    `;
+    return;
   }
+
+  filtrados.forEach(prod => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${prod.nome}</td>
+      <td>${prod.quantidade}</td>
+      <td>
+        <button class="btn-editar" data-id="${prod.id}">Editar</button>
+      </td>
+      <td>
+        <button class="btn-excluir" data-id="${prod.id}">Excluir</button>
+      </td>
+    `;
+    tabela.appendChild(tr);
+  });
+
+  ativarEventosTabela();
 }
 
-document.addEventListener("DOMContentLoaded", iniciarControle);
+// ----------------------
+// Eventos dos botões
+// ----------------------
+function ativarEventosTabela() {
+  document.querySelectorAll(".btn-editar").forEach(btn => {
+    btn.addEventListener("click", () => carregarParaEdicao(btn.dataset.id));
+  });
+
+  document.querySelectorAll(".btn-excluir").forEach(btn => {
+    btn.addEventListener("click", () => excluirProduto(btn.dataset.id));
+  });
+}
+
+// ----------------------
+// Editar Produto
+// ----------------------
+function carregarParaEdicao(id) {
+  const p = listaProdutos.find(x => x.id === id);
+  if (!p) return;
+
+  editandoId = id;
+  inputNome.value = p.nome;
+  inputQuantidade.value = p.quantidade;
+  btnSalvar.textContent = "Atualizar Produto";
+}
+
+// ----------------------
+// Excluir Produto
+// ----------------------
+async function excluirProduto(id) {
+  if (!confirm("Deseja realmente excluir este produto?")) return;
+
+  await deleteDoc(doc(db, "produtos", id));
+}
+
+// ----------------------
+// Salvar ou Atualizar Produto
+// ----------------------
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const nome = inputNome.value.trim();
+  const quantidade = Number(inputQuantidade.value || 0);
+
+  if (!nome) {
+    alert("Digite o nome do produto.");
+    return;
+  }
+
+  if (quantidade < 0) {
+    alert("A quantidade não pode ser negativa.");
+    return;
+  }
+
+  // Atualizar produto existente
+  if (editandoId) {
+    await updateDoc(doc(db, "produtos", editandoId), {
+      nome,
+      quantidade
+    });
+    editandoId = null;
+    btnSalvar.textContent = "Salvar Produto";
+  }
+
+  // Criar novo produto
+  else {
+    await addDoc(produtosCol, {
+      nome,
+      quantidade
+    });
+  }
+
+  // Limpar campos
+  form.reset();
+});
+
+// ----------------------
+console.log("produtos.js carregado com sucesso");
