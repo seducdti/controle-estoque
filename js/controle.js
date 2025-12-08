@@ -1,132 +1,201 @@
 // ===============================
-// controle.js — Dashboard Geral
+//  FIREBASE CONFIG
 // ===============================
-
-import { db } from "./firebase.js";
 import {
   collection,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  addDoc,
+  getDocs,
+  getFirestore,
+  updateDoc,
+  doc,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const tabela = document.getElementById("tabelaProdutos");
-const searchInput = document.getElementById("pesquisarProduto");
-
-const produtosCol = collection(db, "produtos");
-const entradasCol = collection(db, "entradas");
-const saidasCol = collection(db, "saidas");
+import { app } from "./firebase.js"; // importa firebase.js
+const db = getFirestore(app);
 
 // ===============================
-// Função para carregar dados
+//  ELEMENTOS DA TELA
 // ===============================
+const produtoSelect = document.getElementById("produto");
+const quantidadeInput = document.getElementById("quantidade");
+const dataInput = document.getElementById("data");
+const destinoInput = document.getElementById("destino");
+const origemInput = document.getElementById("origem");
 
-async function carregarTudo() {
-  const produtosSnap = await getDocs(produtosCol);
-  const entradasSnap = await getDocs(entradasCol);
-  const saidasSnap = await getDocs(saidasCol);
+const tabelaEntradas = document.getElementById("tabela-entradas");
+const tabelaSaidas = document.getElementById("tabela-saidas");
 
-  const produtos = [];
-  produtosSnap.forEach(docSnap => {
-    produtos.push({
-      id: docSnap.id,
-      ...docSnap.data(),
-      quantidade: Number(docSnap.data().quantidade) || 0
-    });
+// ===============================
+//  CARREGAR PRODUTOS
+// ===============================
+async function carregarProdutos() {
+  const snap = await getDocs(collection(db, "produtos"));
+  produtoSelect.innerHTML = "";
+
+  snap.forEach((d) => {
+    const p = d.data();
+    const opt = document.createElement("option");
+    opt.value = d.id;
+    opt.textContent = p.nome;
+    produtoSelect.appendChild(opt);
+  });
+}
+carregarProdutos();
+
+// ===============================
+//  REGISTRAR ENTRADA
+// ===============================
+export async function registrarEntrada(e) {
+  if (e) e.preventDefault();
+
+  const produtoId = produtoSelect.value;
+  const qtd = Number(quantidadeInput.value);
+  const dataVal = dataInput.value ? new Date(dataInput.value).toISOString() : null;
+  const origem = origemInput.value.trim() || "";
+
+  if (!produtoId || qtd <= 0) return alert("Preencha todos os campos.");
+
+  // Busca o produto para salvar o nome junto
+  const snap = await getDocs(collection(db, "produtos"));
+  let produtoNome = "";
+
+  snap.forEach((d) => {
+    if (d.id === produtoId) produtoNome = d.data().nome;
   });
 
-  const entradas = [];
-  entradasSnap.forEach(docSnap => {
-    const d = docSnap.data();
-    entradas.push({
-      id: docSnap.id,
-      ...d,
-      quantidade: Number(d.quantidade) || 0,
-      data: d.data || null
-    });
+  await addDoc(collection(db, "entradas"), {
+    produtoId,
+    produtoNome,
+    quantidade: qtd,
+    data: dataVal,
+    origem,
   });
 
-  const saidas = [];
-  saidasSnap.forEach(docSnap => {
-    const d = docSnap.data();
-    saidas.push({
-      id: docSnap.id,
-      ...d,
-      quantidade: Number(d.quantidade) || 0,
-      data: d.data || null
-    });
-  });
+  alert("Entrada registrada!");
+  quantidadeInput.value = "";
+  origemInput.value = "";
 
-  montarTabela(produtos, entradas, saidas);
+  carregarEntradas();
 }
 
 // ===============================
-// Construir tabela
+//  REGISTRAR SAÍDA
 // ===============================
+export async function registrarSaida(e) {
+  if (e) e.preventDefault();
 
-function montarTabela(produtos, entradas, saidas) {
-  if (!tabela) return;
+  const produtoId = produtoSelect.value;
+  const qtd = Number(quantidadeInput.value);
+  const destino = destinoInput.value.trim() || "";
+  const dataVal = dataInput.value ? new Date(dataInput.value).toISOString() : null;
 
-  tabela.innerHTML = "";
+  if (!produtoId || qtd <= 0) return alert("Preencha todos os campos.");
 
-  produtos.forEach(prod => {
+  // Busca nome do produto
+  const snap = await getDocs(collection(db, "produtos"));
+  let produtoNome = "";
+  let estoqueAtual = 0;
+  let produtoRef = null;
 
-    // somatórios seguros
-    const totalEntradas = entradas
-      .filter(e => e.produtoId === prod.id)
-      .reduce((acc, e) => acc + (Number(e.quantidade) || 0), 0);
-
-    const totalSaidas = saidas
-      .filter(s => s.produtoId === prod.id)
-      .reduce((acc, s) => acc + (Number(s.quantidade) || 0), 0);
-
-    // saldo calculado
-    const saldo = totalEntradas - totalSaidas;
-
-    // nível automático
-    let nivel = "OK";
-    let cor = "green";
-
-    if (saldo <= 0) {
-      nivel = "CRÍTICO";
-      cor = "red";
-    } else if (saldo < 5) {
-      nivel = "BAIXO";
-      cor = "orange";
+  snap.forEach((d) => {
+    if (d.id === produtoId) {
+      const p = d.data();
+      produtoNome = p.nome;
+      estoqueAtual = Number(p.estoque || 0);
+      produtoRef = d.ref;
     }
+  });
 
+  if (qtd > estoqueAtual) {
+    return alert("Quantidade maior que o estoque disponível!");
+  }
+
+  await addDoc(collection(db, "saidas"), {
+    produtoId,
+    produtoNome,
+    quantidade: qtd,
+    data: dataVal,
+    destino,
+  });
+
+  // Atualiza estoque
+  await updateDoc(produtoRef, {
+    estoque: estoqueAtual - qtd,
+  });
+
+  alert("Saída registrada!");
+  quantidadeInput.value = "";
+  destinoInput.value = "";
+
+  carregarSaidas();
+}
+
+// ===============================
+//  LISTAR ENTRADAS
+// ===============================
+async function carregarEntradas() {
+  const snap = await getDocs(collection(db, "entradas"));
+  tabelaEntradas.innerHTML = "";
+
+  snap.forEach((d) => {
+    const e = d.data();
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
-      <td>${prod.id}</td>
-      <td>${prod.nome || "-"}</td>
-      <td>${totalEntradas}</td>
-      <td>${totalSaidas}</td>
-      <td>${saldo}</td>
-      <td>
-        <span style="color:${cor}; font-weight:bold;">
-          ● ${nivel}
-        </span>
-      </td>
+      <td>${e.produtoNome}</td>
+      <td>${e.quantidade}</td>
+      <td>${e.origem || "-"}</td>
+      <td>${e.data ? new Date(e.data).toLocaleDateString() : "-"}</td>
     `;
 
-    tabela.appendChild(tr);
+    tabelaEntradas.appendChild(tr);
   });
 }
+carregarEntradas();
 
 // ===============================
-// Pesquisa na tabela
+//  LISTAR SAÍDAS
 // ===============================
+async function carregarSaidas() {
+  const snap = await getDocs(collection(db, "saidas"));
+  tabelaSaidas.innerHTML = "";
 
-searchInput?.addEventListener("input", () => {
-  const termo = searchInput.value.toLowerCase();
+  snap.forEach((d) => {
+    const s = d.data();
+    const tr = document.createElement("tr");
 
-  Array.from(tabela.querySelectorAll("tr")).forEach(tr => {
-    const texto = tr.textContent.toLowerCase();
-    tr.style.display = texto.includes(termo) ? "" : "none";
+    tr.innerHTML = `
+      <td>${s.produtoNome}</td>
+      <td>${s.quantidade}</td>
+      <td>${s.destino || "-"}</td>
+      <td>${s.data ? new Date(s.data).toLocaleDateString() : "-"}</td>
+    `;
+
+    tabelaSaidas.appendChild(tr);
   });
-});
+}
+carregarSaidas();
 
 // ===============================
-// Iniciar
+//  EXPORTAR PDF
 // ===============================
+export function gerarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
 
-carregarTudo();
+  doc.text("Relatório de Controle", 10, 10);
+
+  doc.autoTable({
+    startY: 20,
+    html: "#tabela-entradas",
+    headStyles: { fillColor: [22, 160, 133] },
+  });
+
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 10,
+    html: "#tabela-saidas",
+    headStyles: { fillColor: [231, 76, 60] },
+  });
+
+  doc.save("controle.pdf");
+}
