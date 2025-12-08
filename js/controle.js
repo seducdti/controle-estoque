@@ -1,177 +1,101 @@
-// ===============================
-// produtos.js — Cadastro e Lista de Produtos (Firebase)
-// ===============================
-
 import { db } from "./firebase.js";
 import {
   collection,
-  addDoc,
-  deleteDoc,
-  updateDoc,
-  doc,
   onSnapshot,
   query,
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const tabela = document.getElementById("listaProdutos");
-const form = document.getElementById("formProduto");
-const inputNome = document.getElementById("nomeProduto");
-const inputQuantidade = document.getElementById("quantidadeProduto");
-const btnSalvar = document.getElementById("btnSalvar");
-const inputPesquisa = document.getElementById("pesquisaProduto");
+// -----------------------------
+// Referências Firebase
+// -----------------------------
+const produtosCol = collection(db, "produtos");
+const entradasCol = collection(db, "entradas");
+const saidasCol   = collection(db, "saidas");
 
-let editandoId = null;
-let listaProdutos = [];
+const tabela = document.getElementById("listaControle");
+const pesquisaInput = document.getElementById("pesquisaProduto");
+
+let produtos = [];
+let entradas = [];
+let saidas = [];
 let termoPesquisa = "";
 
-// Referência Firebase
-const produtosCol = collection(db, "produtos");
-
-
-// --------------------------------------------------------
-// PESQUISA — muda a tabela conforme o usuário digita
-// --------------------------------------------------------
-if (inputPesquisa) {
-  inputPesquisa.addEventListener("input", () => {
-    termoPesquisa = inputPesquisa.value.toLowerCase().trim();
-    montarTabela();
-  });
-}
-
-
-// --------------------------------------------------------
-// CARREGAMENTO EM TEMPO REAL (onSnapshot)
-// --------------------------------------------------------
-onSnapshot(query(produtosCol, orderBy("nome")), snap => {
-  listaProdutos = snap.docs.map(doc => ({
-    id: doc.id,
-    nome: doc.data().nome,
-    quantidade: Number(doc.data().quantidade || 0)
-  }));
-
+// -------------------------------------------
+// FILTRO EM TEMPO REAL
+// -------------------------------------------
+pesquisaInput.addEventListener("input", () => {
+  termoPesquisa = pesquisaInput.value.toLowerCase().trim();
   montarTabela();
 });
 
+// -------------------------------------------
+// CARREGAMENTO DOS DADOS EM TEMPO REAL
+// -------------------------------------------
+onSnapshot(query(produtosCol, orderBy("nome")), snap => {
+  produtos = snap.docs.map(doc => ({
+    id: doc.id,
+    nome: doc.data().nome,
+    quantidadeInicial: Number(doc.data().quantidade || 0)
+  }));
+  montarTabela();
+});
 
-// --------------------------------------------------------
-// FUNÇÃO QUE MONTA A TABELA
-// --------------------------------------------------------
+onSnapshot(entradasCol, snap => {
+  entradas = snap.docs.map(doc => doc.data());
+  montarTabela();
+});
+
+onSnapshot(saidasCol, snap => {
+  saidas = snap.docs.map(doc => doc.data());
+  montarTabela();
+});
+
+// -------------------------------------------
+// MONTAR A TABELA DE RESUMO
+// -------------------------------------------
 function montarTabela() {
   if (!tabela) return;
 
   tabela.innerHTML = "";
 
-  // Aplicar filtro da pesquisa
-  const filtrados = listaProdutos.filter(p =>
+  const filtrados = produtos.filter(p =>
     p.nome.toLowerCase().includes(termoPesquisa)
   );
 
-  if (filtrados.length === 0) {
-    tabela.innerHTML = `
-      <tr>
-        <td colspan="4" class="muted">Nenhum produto encontrado</td>
-      </tr>
-    `;
-    return;
-  }
+  filtrados.forEach(produto => {
+    const totalEntradas = entradas
+      .filter(e => e.produtoId === produto.id)
+      .reduce((acc, e) => acc + Number(e.qtd), 0);
 
-  filtrados.forEach(prod => {
+    const totalSaidas = saidas
+      .filter(s => s.produtoId === produto.id)
+      .reduce((acc, s) => acc + Number(s.qtd), 0);
+
+    const saldo = produto.quantidadeInicial + totalEntradas - totalSaidas;
+
+    const nivel =
+      saldo <= 0 ? "⚠️ Sem estoque" :
+      saldo <= 3 ? "🔸 Baixo" :
+      "🟢 OK";
+
     const tr = document.createElement("tr");
-
     tr.innerHTML = `
-      <td>${prod.nome}</td>
-      <td>${prod.quantidade}</td>
-      <td><button class="btn-editar" data-id="${prod.id}">Editar</button></td>
-      <td><button class="btn-excluir" data-id="${prod.id}">Excluir</button></td>
+      <td>${produto.id}</td>
+      <td>${produto.nome}</td>
+      <td>${totalEntradas}</td>
+      <td>${totalSaidas}</td>
+      <td>${saldo}</td>
+      <td>${nivel}</td>
     `;
-
     tabela.appendChild(tr);
   });
 
-  ativarEventosTabela();
+  if (filtrados.length === 0) {
+    tabela.innerHTML = `
+      <tr><td colspan="6" class="muted">Nenhum produto encontrado</td></tr>
+    `;
+  }
 }
 
-
-// --------------------------------------------------------
-// BOTÕES DE EDITAR E EXCLUIR
-// --------------------------------------------------------
-function ativarEventosTabela() {
-
-  document.querySelectorAll(".btn-editar").forEach(btn => {
-    btn.addEventListener("click", () => carregarParaEdicao(btn.dataset.id));
-  });
-
-  document.querySelectorAll(".btn-excluir").forEach(btn => {
-    btn.addEventListener("click", () => excluirProduto(btn.dataset.id));
-  });
-}
-
-
-// --------------------------------------------------------
-// EDITAR PRODUTO
-// --------------------------------------------------------
-function carregarParaEdicao(id) {
-  const p = listaProdutos.find(x => x.id === id);
-  if (!p) return;
-
-  editandoId = id;
-  inputNome.value = p.nome;
-  inputQuantidade.value = p.quantidade;
-  btnSalvar.textContent = "Atualizar Produto";
-}
-
-
-// --------------------------------------------------------
-// EXCLUIR PRODUTO
-// --------------------------------------------------------
-async function excluirProduto(id) {
-  if (!confirm("Deseja realmente excluir este produto?")) return;
-
-  await deleteDoc(doc(db, "produtos", id));
-}
-
-
-// --------------------------------------------------------
-// SALVAR OU ATUALIZAR PRODUTO
-// --------------------------------------------------------
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const nome = inputNome.value.trim();
-  const quantidade = Number(inputQuantidade.value || 0);
-
-  if (!nome) {
-    alert("Digite o nome do produto.");
-    return;
-  }
-
-  if (quantidade < 0) {
-    alert("A quantidade não pode ser negativa.");
-    return;
-  }
-
-  // Atualizar produto existente
-  if (editandoId) {
-    await updateDoc(doc(db, "produtos", editandoId), {
-      nome,
-      quantidade
-    });
-
-    editandoId = null;
-    btnSalvar.textContent = "Salvar Produto";
-  }
-
-  // Criar novo produto
-  else {
-    await addDoc(produtosCol, {
-      nome,
-      quantidade
-    });
-  }
-
-  // Limpar campos
-  form.reset();
-});
-
-console.log("produtos.js carregado com sucesso");
+console.log("controle.js carregado com sucesso!");
