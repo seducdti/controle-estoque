@@ -1,3 +1,7 @@
+// ===============================
+// controle.js — Resumo Geral de Estoque
+// ===============================
+
 import { db } from "./firebase.js";
 import {
   collection,
@@ -6,96 +10,100 @@ import {
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// -----------------------------
-// Referências Firebase
-// -----------------------------
-const produtosCol = collection(db, "produtos");
-const entradasCol = collection(db, "entradas");
-const saidasCol   = collection(db, "saidas");
-
 const tabela = document.getElementById("listaControle");
-const pesquisaInput = document.getElementById("pesquisaProduto");
+const inputPesquisa = document.getElementById("pesquisaProduto");
 
 let produtos = [];
 let entradas = [];
 let saidas = [];
 let termoPesquisa = "";
 
-// -------------------------------------------
-// FILTRO EM TEMPO REAL
-// -------------------------------------------
-pesquisaInput.addEventListener("input", () => {
-  termoPesquisa = pesquisaInput.value.toLowerCase().trim();
+// coleções
+const produtosCol = collection(db, "produtos");
+const entradasCol = collection(db, "entradas");
+const saidasCol = collection(db, "saidas");
+
+// pesquisa
+inputPesquisa?.addEventListener("input", () => {
+  termoPesquisa = inputPesquisa.value.toLowerCase().trim();
   montarTabela();
 });
 
-// -------------------------------------------
-// CARREGAMENTO DOS DADOS EM TEMPO REAL
-// -------------------------------------------
+// listener produtos
 onSnapshot(query(produtosCol, orderBy("nome")), snap => {
-  produtos = snap.docs.map(doc => ({
-    id: doc.id,
-    nome: doc.data().nome,
-    quantidadeInicial: Number(doc.data().quantidade || 0)
-  }));
+  produtos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   montarTabela();
 });
 
-onSnapshot(entradasCol, snap => {
-  entradas = snap.docs.map(doc => doc.data());
+// listener entradas
+onSnapshot(query(entradasCol, orderBy("data", "desc")), snap => {
+  entradas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   montarTabela();
 });
 
-onSnapshot(saidasCol, snap => {
-  saidas = snap.docs.map(doc => doc.data());
+// listener saídas
+onSnapshot(query(saidasCol, orderBy("data", "desc")), snap => {
+  saidas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   montarTabela();
 });
 
-// -------------------------------------------
-// MONTAR A TABELA DE RESUMO
-// -------------------------------------------
+// ===============================
+// MONTAR TABELA
+// ===============================
 function montarTabela() {
   if (!tabela) return;
 
   tabela.innerHTML = "";
 
+  // filtro pesquisa
   const filtrados = produtos.filter(p =>
     p.nome.toLowerCase().includes(termoPesquisa)
   );
 
-  filtrados.forEach(produto => {
-    const totalEntradas = entradas
-      .filter(e => e.produtoId === produto.id)
-      .reduce((acc, e) => acc + Number(e.qtd), 0);
+  if (filtrados.length === 0) {
+    tabela.innerHTML = `
+      <tr><td colspan="6">Nenhum produto encontrado</td></tr>
+    `;
+    return;
+  }
 
-    const totalSaidas = saidas
-      .filter(s => s.produtoId === produto.id)
-      .reduce((acc, s) => acc + Number(s.qtd), 0);
+  filtrados.forEach(prod => {
+    // soma entradas do produto
+    const entradasProduto = entradas.filter(e => e.produtoId === prod.id);
+    const totalEntradas = entradasProduto.reduce(
+      (s, e) => s + Number(e.quantidade || 0),
+      0
+    );
 
-    const saldo = produto.quantidadeInicial + totalEntradas - totalSaidas;
+    // soma saídas do produto
+    const saidasProduto = saidas.filter(s => s.produtoId === prod.id);
+    const totalSaidas = saidasProduto.reduce(
+      (s, e) => s + Number(e.quantidade || 0),
+      0
+    );
 
-    const nivel =
-      saldo <= 0 ? "⚠️ Sem estoque" :
-      saldo <= 3 ? "🔸 Baixo" :
-      "🟢 OK";
+    // saldo atual
+    const saldo = Number(prod.quantidade || 0);
+
+    // nivel
+    let nivel = "";
+    if (saldo <= 3) nivel = "🔴 Baixo";
+    else if (saldo <= 10) nivel = "🟡 Médio";
+    else nivel = "🟢 Alto";
 
     const tr = document.createElement("tr");
+
     tr.innerHTML = `
-      <td>${produto.id}</td>
-      <td>${produto.nome}</td>
+      <td>${prod.id}</td>
+      <td>${prod.nome}</td>
       <td>${totalEntradas}</td>
       <td>${totalSaidas}</td>
       <td>${saldo}</td>
       <td>${nivel}</td>
     `;
+
     tabela.appendChild(tr);
   });
-
-  if (filtrados.length === 0) {
-    tabela.innerHTML = `
-      <tr><td colspan="6" class="muted">Nenhum produto encontrado</td></tr>
-    `;
-  }
 }
 
-console.log("controle.js carregado com sucesso!");
+console.log("controle.js carregado");
