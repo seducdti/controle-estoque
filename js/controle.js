@@ -28,37 +28,41 @@ let termoPesquisa = "";
 // Referência Firebase
 const produtosCol = collection(db, "produtos");
 
-// ----------------------
-// Listener para Pesquisa
-// ----------------------
+
+// --------------------------------------------------------
+// PESQUISA — muda a tabela conforme o usuário digita
+// --------------------------------------------------------
 if (inputPesquisa) {
   inputPesquisa.addEventListener("input", () => {
-    termoPesquisa = inputPesquisa.value.toLowerCase();
+    termoPesquisa = inputPesquisa.value.toLowerCase().trim();
     montarTabela();
   });
 }
 
-// ----------------------
-// Carregar produtos em tempo real
-// ----------------------
+
+// --------------------------------------------------------
+// CARREGAMENTO EM TEMPO REAL (onSnapshot)
+// --------------------------------------------------------
 onSnapshot(query(produtosCol, orderBy("nome")), snap => {
   listaProdutos = snap.docs.map(doc => ({
     id: doc.id,
     nome: doc.data().nome,
     quantidade: Number(doc.data().quantidade || 0)
   }));
+
   montarTabela();
 });
 
-// ----------------------
-// Monta tabela visual
-// ----------------------
+
+// --------------------------------------------------------
+// FUNÇÃO QUE MONTA A TABELA
+// --------------------------------------------------------
 function montarTabela() {
   if (!tabela) return;
 
   tabela.innerHTML = "";
 
-  // Aplica filtro da pesquisa
+  // Aplicar filtro da pesquisa
   const filtrados = listaProdutos.filter(p =>
     p.nome.toLowerCase().includes(termoPesquisa)
   );
@@ -74,26 +78,26 @@ function montarTabela() {
 
   filtrados.forEach(prod => {
     const tr = document.createElement("tr");
+
     tr.innerHTML = `
       <td>${prod.nome}</td>
       <td>${prod.quantidade}</td>
-      <td>
-        <button class="btn-editar" data-id="${prod.id}">Editar</button>
-      </td>
-      <td>
-        <button class="btn-excluir" data-id="${prod.id}">Excluir</button>
-      </td>
+      <td><button class="btn-editar" data-id="${prod.id}">Editar</button></td>
+      <td><button class="btn-excluir" data-id="${prod.id}">Excluir</button></td>
     `;
+
     tabela.appendChild(tr);
   });
 
   ativarEventosTabela();
 }
 
-// ----------------------
-// Eventos dos botões
-// ----------------------
+
+// --------------------------------------------------------
+// BOTÕES DE EDITAR E EXCLUIR
+// --------------------------------------------------------
 function ativarEventosTabela() {
+
   document.querySelectorAll(".btn-editar").forEach(btn => {
     btn.addEventListener("click", () => carregarParaEdicao(btn.dataset.id));
   });
@@ -103,9 +107,10 @@ function ativarEventosTabela() {
   });
 }
 
-// ----------------------
-// Editar Produto
-// ----------------------
+
+// --------------------------------------------------------
+// EDITAR PRODUTO
+// --------------------------------------------------------
 function carregarParaEdicao(id) {
   const p = listaProdutos.find(x => x.id === id);
   if (!p) return;
@@ -116,18 +121,20 @@ function carregarParaEdicao(id) {
   btnSalvar.textContent = "Atualizar Produto";
 }
 
-// ----------------------
-// Excluir Produto
-// ----------------------
+
+// --------------------------------------------------------
+// EXCLUIR PRODUTO
+// --------------------------------------------------------
 async function excluirProduto(id) {
   if (!confirm("Deseja realmente excluir este produto?")) return;
 
   await deleteDoc(doc(db, "produtos", id));
 }
 
-// ----------------------
-// Salvar ou Atualizar Produto
-// ----------------------
+
+// --------------------------------------------------------
+// SALVAR OU ATUALIZAR PRODUTO
+// --------------------------------------------------------
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -150,6 +157,7 @@ form.addEventListener("submit", async (e) => {
       nome,
       quantidade
     });
+
     editandoId = null;
     btnSalvar.textContent = "Salvar Produto";
   }
@@ -166,5 +174,4 @@ form.addEventListener("submit", async (e) => {
   form.reset();
 });
 
-// ----------------------
 console.log("produtos.js carregado com sucesso");
