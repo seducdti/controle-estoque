@@ -303,3 +303,30 @@ cancelarBtn?.addEventListener("click", resetFormState);
 // ===============================
 
 formEntrada?.addEventListener("submit", registrarEntrada);
+
+// ===============================
+// SUBMIT DO FORM
+// ===============================
+
+formEntrada?.addEventListener("submit", registrarEntrada);
+
+// ===============================
+// PESQUISA NA TABELA DE ENTRADAS
+// ===============================
+
+const campoPesquisa = document.getElementById("pesquisaEntrada");
+
+if (campoPesquisa) {
+  campoPesquisa.addEventListener("input", () => {
+    const termo = campoPesquisa.value.toLowerCase();
+    const linhas = tabelaEntradas.querySelectorAll("tr");
+
+    linhas.forEach(linha => {
+      const textoLinha = linha.textContent.toLowerCase();
+      linha.style.display = textoLinha.includes(termo) ? "" : "none";
+    });
+  });
+}
+
+
+
